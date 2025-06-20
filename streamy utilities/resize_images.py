@@ -5,15 +5,14 @@ This script requires the Pillow library. Install it using:
     pip install Pillow
 
 Usage:
-    python resize_images.py <source_dir> <output_dir> (--width <W> --height <H> | --scale <S>)
+    python resize_images.py <source_dir> <output_dir> (--dimensions WIDTH HEIGHT | --scale PERCENT)
 
 Arguments:
     source_dir:       Path to the directory containing original images.
     output_dir:       Path to the directory where resized images will be saved.
-    --width W:        Target width for resizing. Must be used with --height.
-    --height H:       Target height for resizing. Must be used with --width.
+    --dimensions W H: Target width and height for resizing (must provide both).
     --scale S:        Percentage to scale images by (e.g., 50 for 50%).
-                      Cannot be used with --width/--height.
+                      Cannot be used with --dimensions.
 
 Supported formats: JPG, PNG, and other formats supported by Pillow.
 Files that are not valid images or are unsupported will be skipped.
@@ -31,14 +30,15 @@ def resize_image(image_path, output_path, new_width=None, new_height=None, scale
         img = Image.open(image_path)
         original_width, original_height = img.size
 
-        if scale_percent:
-            if not (0 < scale_percent <= 500): # Allow upscaling up to 500%
+        if scale_percent is not None:
+            if not (0 < scale_percent <= 500):
                 print(f"Warning: Scale percent {scale_percent}% is out of reasonable range (1-500). Skipping {image_path}")
                 return False
             new_width = int(original_width * scale_percent / 100)
             new_height = int(original_height * scale_percent / 100)
-        elif new_width is None or new_height is None:
-            # This case should ideally be caught by argument parsing logic
+        elif new_width is not None and new_height is not None:
+            pass
+        else:
             print(f"Error: Invalid resize parameters for {image_path}. Width/Height or Scale must be provided.")
             return False
 
@@ -66,20 +66,33 @@ def main():
         description="Resizes images from a source directory.",
         formatter_class=argparse.RawTextHelpFormatter
     )
-    parser.add_argument("source_dir", help="Directory containing original images.")
-    parser.add_argument("output_dir", help="Directory to save resized images.")
-
+    parser.add_argument("source_dir", help="Path to the directory containing original images.")
+    parser.add_argument("output_dir", help="Path to the directory where resized images will be saved.")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--width", type=int, help="Target width for resizing (requires --height).")
-    group.add_argument("--scale", type=float, help="Percentage to scale images by (e.g., 50 for 50%%).")
-
-    parser.add_argument("--height", type=int, help="Target height for resizing (requires --width).")
-
+    group.add_argument(
+        "--dimensions",
+        nargs=2,
+        type=int,
+        metavar=("WIDTH", "HEIGHT"),
+        help="Target width and height for resizing."
+    )
+    group.add_argument(
+        "--scale",
+        type=float,
+        help="Percentage to scale images by (e.g., 50 for 50%)."
+    )
     args = parser.parse_args()
 
-    if (args.width is not None and args.height is None) or \
-       (args.height is not None and args.width is None):
-        parser.error("--width and --height must be used together.")
+    if args.dimensions:
+        width, height = args.dimensions
+        scale = None
+        if width <= 0 or height <= 0:
+            parser.error("Width and height must be positive integers.")
+    else:
+        width = height = None
+        scale = args.scale
+        if not (0 < scale <= 500):
+            parser.error("Scale percent must be in the range 1-500.")
 
     if not os.path.isdir(args.source_dir):
         print(f"Error: Source directory '{args.source_dir}' not found.")
@@ -101,28 +114,25 @@ def main():
     skipped_count = 0
 
     print(f"\nStarting image resizing from '{args.source_dir}' to '{args.output_dir}'.")
-    if args.scale:
-        print(f"Resizing by: {args.scale}%")
+    if scale is not None:
+        print(f"Resizing by: {scale}%")
     else:
-        print(f"Resizing to: {args.width}x{args.height}")
+        print(f"Resizing to: {width}x{height}")
 
     for filename in os.listdir(args.source_dir):
         if not any(filename.lower().endswith(ext) for ext in SUPPORTED_FORMATS):
-            # print(f"Skipping {filename}: Not a recognized image file extension.")
-            continue # Silently skip non-image extensions unless verbose mode is added
-
+            continue
         source_filepath = os.path.join(args.source_dir, filename)
         output_filepath = os.path.join(args.output_dir, filename)
-
         if os.path.isfile(source_filepath):
             processed_count += 1
-            if resize_image(source_filepath, output_filepath, args.width, args.height, args.scale):
+            if resize_image(source_filepath, output_filepath, width, height, scale):
                 success_count += 1
             else:
                 skipped_count += 1
 
     print("\n--- Summary ---")
-    print(f"Total files considered (based on extension): {processed_count}") # This might be slightly off if listdir has non-files
+    print(f"Total files considered (based on extension): {processed_count}")
     print(f"Successfully resized: {success_count}")
     print(f"Skipped or failed: {skipped_count}")
 
