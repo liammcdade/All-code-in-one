@@ -44,12 +44,12 @@ def main():
             f"Error: The data file '{RESULTS_CSV_FILE}' was not found. "
             "Please ensure it is in the same directory as the script."
         )
-        sys.exit(1)
+        return
     except (pd.errors.EmptyDataError, pd.errors.ParserError) as e:
         print(
             f"Error: Could not parse the data file '{RESULTS_CSV_FILE}'. It might be corrupted or not a valid CSV. Details: {e}"
         )
-        sys.exit(1)
+        return
 
     # --- Data Cleaning and Preparation ---
     df["Position"] = pd.to_numeric(df["Position"], errors="coerce")
@@ -123,7 +123,7 @@ def main():
 
     if not drivers:
         print("No drivers found to simulate. Exiting.")
-        sys.exit(0)
+        return
 
     # Ensure weights match drivers, handle empty probabilities
     if probabilities.empty or probabilities.sum() == 0:
@@ -136,7 +136,7 @@ def main():
 
     if not list(weights):  # Handle empty weights list if drivers list was also empty
         print("No weights available for simulation. Exiting.")
-        sys.exit(0)
+        return
 
     sim_results = np.random.choice(drivers, size=N_SIMULATIONS, p=weights)
     sim_counts_percent = pd.Series(sim_results).value_counts(normalize=True) * 100

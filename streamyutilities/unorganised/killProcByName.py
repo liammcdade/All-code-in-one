@@ -133,8 +133,8 @@ if __name__ == "__main__":
 
     if args.dry_run:
         print("\n[Dry Run] No signals will be sent.")
-        print(f"The above {len(matched_procs)} process(es) would be targeted for {'SIGKILL' if args.force else 'SIGTERM'}.")
-        sys.exit(0)
+        print(f"The above {len(matched_procs)} process(es) would be targeted for {'SIGKILL' if args.force else 'SIGTERM' }.")
+        return
 
     print("\n--- Confirmation ---")
     try:
@@ -142,10 +142,10 @@ if __name__ == "__main__":
         action = input("Enter 'all' to target all, 'none' to cancel, or comma/hyphen-separated indices (e.g., 1,3-5) to target specific processes: ").strip().lower()
     except EOFError:
         print("\nNo input received. Aborting.", file=sys.stderr)
-        sys.exit(1)
+        return
     except KeyboardInterrupt:
         print("\nUser cancelled. Aborting.", file=sys.stderr)
-        sys.exit(1)
+        return
 
 
     procs_to_kill = []
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         procs_to_kill = matched_procs
     elif action == 'none' or not action:
         print("No action taken. Exiting.")
-        sys.exit(0)
+        return
     else: # Parse indices
         try:
             selected_indices = set()
@@ -176,11 +176,11 @@ if __name__ == "__main__":
                 procs_to_kill.append(matched_procs[idx])
         except ValueError as e:
             print(f"Invalid input for selection: {e}. Please use numbers corresponding to the list.", file=sys.stderr)
-            sys.exit(1)
+            return
 
     if not procs_to_kill:
         print("No processes selected for action. Exiting.")
-        sys.exit(0)
+        return
 
     print(f"\n--- Attempting to send {'SIGKILL' if args.force else 'SIGTERM'} to {len(procs_to_kill)} selected process(es) ---")
     killed_count = 0

@@ -158,7 +158,7 @@ if __name__ == "__main__":
             print(f"Error serializing data to JSON: {e}")
             # Fallback to readable print if JSON fails badly
             # print_readable_info(system_info_data)
-            exit(1) # Exit if JSON output was specifically requested but failed
+            return # Exit if JSON output was specifically requested but failed
     else:
         # Output in human-readable format
         print_readable_info(system_info_data)

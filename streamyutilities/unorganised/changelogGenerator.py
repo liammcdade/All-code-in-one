@@ -224,7 +224,7 @@ if __name__ == "__main__":
     _, _, retcode_git_repo = run_git_command(['git', 'rev-parse', '--is-inside-work-tree'])
     if retcode_git_repo != 0 or _ != "true": # Output of command is "true" or "false"
         print("Error: This script must be run inside a Git repository.", file=sys.stderr)
-        sys.exit(1)
+        return
 
     # 2. Determine revisions
     from_revision = args.from_rev
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         from_revision = get_latest_git_tag()
         if not from_revision:
             print("Error: Could not determine default '--from-rev' (no tags found). Please specify a starting revision.", file=sys.stderr)
-            sys.exit(1)
+            return
         print(f"Defaulted '--from-rev' to latest tag: {from_revision}")
 
     to_revision = args.to_rev
@@ -248,11 +248,11 @@ if __name__ == "__main__":
     categorized_data, breaking_changes_data = generate_changelog_data(from_revision, to_revision, excluded_commit_types)
 
     if categorized_data is None: # Error occurred in generation
-        sys.exit(1)
+        return
 
     if not categorized_data and not breaking_changes_data:
         print("No changes found between the specified revisions that match the criteria.")
-        sys.exit(0)
+        return
 
     # --- Output Changelog ---
     if args.format == "markdown":
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     else:
         # Should not be reached due to choices in argparse
         print(f"Error: Unsupported format '{args.format}'.", file=sys.stderr)
-        sys.exit(1)
+        return
 
     print("\nChangelog generation complete.")
-    sys.exit(0)
+    return

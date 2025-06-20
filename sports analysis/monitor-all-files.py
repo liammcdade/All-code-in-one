@@ -61,7 +61,7 @@ if __name__ == "__main__":
         print(
             f"Error: The specified directory '{directory_to_monitor}' does not exist."
         )
-        sys.exit(1)
+        return
 
     start_monitoring(directory_to_monitor)
 

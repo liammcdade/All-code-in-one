@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
     if success:
         print("QR code generation process complete.")
-        sys.exit(0)
+        return
     else:
         print("QR code generation failed.", file=sys.stderr)
-        sys.exit(1)
+        return

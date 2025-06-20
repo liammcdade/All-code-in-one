@@ -121,4 +121,4 @@ if __name__ == "__main__":
         # Ensure cursor is on a new line and visible if it was hidden or manipulated
         sys.stdout.write("\r" + " " * 80 + "\r") # Clear any leftover timer line
         print("Pomodoro timer stopped.")
-        sys.exit(0)
+        return

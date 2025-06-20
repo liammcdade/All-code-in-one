@@ -87,7 +87,7 @@ def main():
         stdout_is_repo, _, _ = run_git_command(['git', 'rev-parse', '--is-inside-work-tree'])
         if stdout_is_repo != "true":
              print("Error: Not inside a Git repository.", file=sys.stderr)
-             sys.exit(1)
+             return
 
 
     # 2. Determine protected branches
@@ -102,12 +102,13 @@ def main():
             target_branch = args.target_branch
         else: # Default to main or master if detached and no target specified
             local_branches_for_default = get_local_branches()
-            if local_branches_for_default is None: sys.exit(1) # Error already printed
+            if local_branches_for_default is None: 
+                return
             if "main" in local_branches_for_default: target_branch = "main"
             elif "master" in local_branches_for_default: target_branch = "master"
             else:
                 print("Error: Detached HEAD and could not determine a default target branch ('main' or 'master' not found). Please specify --target-branch.", file=sys.stderr)
-                sys.exit(1)
+                return
             print(f"Defaulting target branch to '{target_branch}' due to detached HEAD state.")
     else:
         print(f"Current branch is: '{actual_current_branch}'")
@@ -115,13 +116,14 @@ def main():
 
     # Verify target branch exists
     all_local_branches = get_local_branches()
-    if all_local_branches is None: sys.exit(1) # Error already printed
+    if all_local_branches is None: 
+        return
     if target_branch not in all_local_branches and target_branch not in (actual_current_branch if actual_current_branch else ""): # target_branch could be current if it's symbolic like 'HEAD'
         # A more robust check: `git show-ref --verify --quiet refs/heads/{target_branch}`
         _, _, retcode_verify_target = run_git_command(['git', 'rev-parse', '--verify', f"{target_branch}^{{commit}}"]) # Check if resolvable to a commit
         if retcode_verify_target != 0:
             print(f"Error: Target branch '{target_branch}' does not exist or is not a valid branch.", file=sys.stderr)
-            sys.exit(1)
+            return
     print(f"Using '{target_branch}' as the base for checking merged branches.")
 
 
@@ -129,7 +131,7 @@ def main():
     stdout_merged, stderr_merged, retcode_merged = run_git_command(['git', 'branch', '--merged', target_branch])
     if retcode_merged != 0:
         print(f"Error finding merged branches: {stderr_merged}", file=sys.stderr)
-        sys.exit(1)
+        return
 
     merged_branches_candidates = []
     for line in stdout_merged.splitlines():
@@ -145,7 +147,7 @@ def main():
 
     if not merged_branches_candidates:
         print(f"No local branches found that are merged into '{target_branch}' and not protected.")
-        sys.exit(0)
+        return
 
     print(f"\n--- Branches merged into '{target_branch}' (candidates for deletion) ---")
     for i, branch in enumerate(merged_branches_candidates):
@@ -154,24 +156,24 @@ def main():
     if args.dry_run:
         print("\n[Dry Run] No branches will be deleted.")
         print(f"The above {len(merged_branches_candidates)} branch(es) would be targeted for deletion.")
-        sys.exit(0)
+        return
 
     print("\n--- Confirmation ---")
     try:
         action = input("Enter 'all' to delete all listed, 'none' to cancel, or comma/hyphen-separated indices (e.g., 1,3-5) to delete specific branches: ").strip().lower()
     except EOFError:
         print("\nNo input received. Aborting.", file=sys.stderr)
-        sys.exit(1)
+        return
     except KeyboardInterrupt:
         print("\nUser cancelled. Aborting.", file=sys.stderr)
-        sys.exit(1)
+        return
 
     branches_to_delete = []
     if action == 'all':
         branches_to_delete = merged_branches_candidates
     elif action == 'none' or not action:
         print("No action taken. Exiting.")
-        sys.exit(0)
+        return
     else: # Parse indices
         try:
             selected_indices = set()
@@ -194,12 +196,12 @@ def main():
             for idx in sorted(list(selected_indices)):
                 branches_to_delete.append(merged_branches_candidates[idx])
         except ValueError as e:
-            print(f"Invalid input for selection: {e}", file=sys.stderr)
-            sys.exit(1)
+            print(f"Invalid input for selection: {e}.", file=sys.stderr)
+            return
 
     if not branches_to_delete:
         print("No branches selected for deletion. Exiting.")
-        sys.exit(0)
+        return
 
     print(f"\n--- Deleting {len(branches_to_delete)} selected branch(es) ---")
     deleted_count = 0
@@ -220,7 +222,7 @@ def main():
     if failed_deletions:
         print(f"Failed to delete the following branches: {', '.join(failed_deletions)}")
         print("This might be because they have unmerged changes (use 'git branch -D <branchname>' to force delete) or other issues.")
-    sys.exit(0)
+    return
 
 if __name__ == "__main__":
     main()

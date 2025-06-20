@@ -75,11 +75,11 @@ if __name__ == "__main__":
     # Validate port number
     if not (1 <= args.port <= 65535):
         print(f"Error: Port number {args.port} is invalid. Must be between 1 and 65535.")
-        sys.exit(1)
+        return
 
     if args.timeout <= 0:
         print(f"Error: Timeout value {args.timeout} is invalid. Must be positive.")
-        sys.exit(1)
+        return
 
     print(f"Attempting to connect to host '{args.hostname}' on port {args.port} with a timeout of {args.timeout}s...")
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     if is_open:
         # Exit with 0 if port is open
-        sys.exit(0)
+        return
     else:
         # Exit with 1 if port is closed or error occurred
-        sys.exit(1)
+        return

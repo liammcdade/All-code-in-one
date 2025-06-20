@@ -212,5 +212,4 @@ if __name__ == "__main__":
         remove_venv(args.name)
     else:
         parser.print_help()
-
-    sys.exit(0)
+        return

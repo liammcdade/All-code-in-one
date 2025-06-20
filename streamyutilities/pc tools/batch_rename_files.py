@@ -48,7 +48,7 @@ def generate_new_filename(filename, search_pattern, replace_pattern, prefix, suf
 
     return name + ext
 
-def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix, dry_run):
+def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix, dry_run, auto_confirm=False):
     """Performs the batch renaming operation."""
 
     print(f"\nScanning directory: {directory_path}")
@@ -128,48 +128,53 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
 
     print(f"\nProceeding with {len(actual_renames_to_perform)} rename(s).")
     try:
-        confirm = input("Are you sure you want to rename these files? (yes/no): ").lower()
-        if confirm == 'yes':
-            renamed_count = 0
-            error_count = 0
-            # Sort by new_filepath length descending to handle cases like a -> aa, aa -> aaa
-            # This helps prevent overwriting a source file that is also a target for another rename in the same batch
-            # A more robust way is to rename to temporary unique names first, then to final names.
-            # For simplicity here, we'll rely on the conflict check and careful ordering.
-            # A truly safe approach involves renaming to temp names first if complex chained renames are possible.
-            # However, our conflict check should prevent direct overwrites of existing files not in the batch
-            # and multiple files renaming to the same target.
+        if not auto_confirm:
+            try:
+                confirm = input("Are you sure you want to rename these files? (yes/no): ").lower()
+            except EOFError:
+                print("No input available. Use --yes to skip confirmation in non-interactive mode.")
+                return
+            if confirm != 'yes':
+                print("Renaming cancelled by user.")
+                return
+        renamed_count = 0
+        error_count = 0
+        # Sort by new_filepath length descending to handle cases like a -> aa, aa -> aaa
+        # This helps prevent overwriting a source file that is also a target for another rename in the same batch
+        # A more robust way is to rename to temporary unique names first, then to final names.
+        # For simplicity here, we'll rely on the conflict check and careful ordering.
+        # A truly safe approach involves renaming to temp names first if complex chained renames are possible.
+        # However, our conflict check should prevent direct overwrites of existing files not in the batch
+        # and multiple files renaming to the same target.
 
-            # To be safer, let's check if any new_filepath is an original_filepath of another operation
-            # This is a simple check for chained renames that might fail if not ordered.
-            # For example: fileA -> fileB, and fileB -> fileC. If fileA is renamed first, fileB is overwritten.
-            # A more robust solution is to rename to temporary names first.
+        # To be safer, let's check if any new_filepath is an original_filepath of another operation
+        # This is a simple check for chained renames that might fail if not ordered.
+        # For example: fileA -> fileB, and fileB -> fileC. If fileA is renamed first, fileB is overwritten.
+        # A more robust solution is to rename to temporary names first.
 
-            # Simple check: if a target new_filepath is also an original_filepath in another operation.
-            # This is tricky. The current conflict check handles overwriting *existing* files.
-            # And multiple files mapping to the *same* new name.
-            # The main remaining risk is a -> b, b -> c.
-            # If we rename a to b first, the original b is gone.
-            # To handle this well, often files are renamed to temp names first.
-            # For this script, we'll proceed with the current conflict checks.
+        # Simple check: if a target new_filepath is also an original_filepath in another operation.
+        # This is tricky. The current conflict check handles overwriting *existing* files.
+        # And multiple files mapping to the *same* new name.
+        # The main remaining risk is a -> b, b -> c.
+        # If we rename a to b first, the original b is gone.
+        # To handle this well, often files are renamed to temp names first.
+        # For this script, we'll proceed with the current conflict checks.
 
-            for original_filepath, new_filepath, _, _ in actual_renames_to_perform:
-                try:
-                    os.rename(original_filepath, new_filepath)
-                    print(f"Renamed: '{original_filepath}' -> '{new_filepath}'")
-                    renamed_count += 1
-                except FileExistsError:
-                     print(f"Error renaming '{original_filepath}': Target '{new_filepath}' already exists (should have been caught by pre-check). Skipping.")
-                     error_count +=1
-                except OSError as e:
-                    print(f"Error renaming '{original_filepath}': {e}")
-                    error_count += 1
+        for original_filepath, new_filepath, _, _ in actual_renames_to_perform:
+            try:
+                os.rename(original_filepath, new_filepath)
+                print(f"Renamed: '{original_filepath}' -> '{new_filepath}'")
+                renamed_count += 1
+            except FileExistsError:
+                 print(f"Error renaming '{original_filepath}': Target '{new_filepath}' already exists (should have been caught by pre-check). Skipping.")
+                 error_count +=1
+            except OSError as e:
+                print(f"Error renaming '{original_filepath}': {e}")
+                error_count += 1
 
-            print(f"\nSuccessfully renamed {renamed_count} file(s).")
-            if error_count > 0:
-                print(f"Failed to rename {error_count} file(s) due to errors.")
-        else:
-            print("Renaming cancelled by user.")
+        print(f"\nSuccessfully renamed {renamed_count} file(s).")
+        if error_count > 0:
+            print(f"Failed to rename {error_count} file(s) due to errors.")
     except Exception as e:
         print(f"An error occurred during the renaming process: {e}")
 
@@ -185,6 +190,7 @@ def main():
     parser.add_argument("--prefix", help="Optional. String to add to the beginning of filenames.")
     parser.add_argument("--suffix", help="Optional. String to add to the end of filenames (before extension).")
     parser.add_argument("--dry-run", action="store_true", help="Show proposed renames without making changes.")
+    parser.add_argument("--yes", action="store_true", help="Automatically confirm all renames without prompting.")
 
     args = parser.parse_args()
 
@@ -205,7 +211,8 @@ def main():
         args.replace_pattern,
         args.prefix,
         args.suffix,
-        args.dry_run
+        args.dry_run,
+        args.yes
     )
 
 if __name__ == "__main__":

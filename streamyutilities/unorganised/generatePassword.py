@@ -162,10 +162,10 @@ if __name__ == "__main__":
 
     if args.length <= 0:
         print("Error: Password length must be a positive integer.")
-        exit(1)
+        return
     if args.count <= 0:
         print("Error: Number of passwords to generate must be a positive integer.")
-        exit(1)
+        return
 
     # Check if all character types are disabled
     if not args.use_lowercase and not args.use_uppercase and not args.use_digits and not args.use_symbols:

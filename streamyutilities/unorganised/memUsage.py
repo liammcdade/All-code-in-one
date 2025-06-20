@@ -116,4 +116,4 @@ if __name__ == "__main__":
         print(f"\nAn unexpected error occurred: {e}", file=sys.stderr)
     finally:
         print("Exiting memory usage monitor.")
-        sys.exit(0)
+        return

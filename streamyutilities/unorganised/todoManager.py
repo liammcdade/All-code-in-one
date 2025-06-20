@@ -207,5 +207,4 @@ if __name__ == "__main__":
         edit_task(args.task_id, args.new_description)
     else:
         parser.print_help() # Should not be reached due to 'required=True' for subparsers
-
-    sys.exit(0)
+        return

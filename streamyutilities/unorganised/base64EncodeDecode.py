@@ -136,4 +136,4 @@ if __name__ == "__main__":
         print("\nOperation completed.")
     else:
         print("\nOperation failed.")
-        exit(1)
+        return
