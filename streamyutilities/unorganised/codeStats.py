@@ -6,6 +6,8 @@ import json
 import re
 from collections import defaultdict
 import fnmatch # For glob-style ignore patterns
+import sys
+
 
 # --- Language Definitions (Extensions and Comment Styles) ---
 # Simplified from countLines.py for direct inclusion

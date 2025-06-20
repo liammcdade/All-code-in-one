@@ -3,6 +3,7 @@
 import socket
 import argparse
 import sys
+import os
 
 DEFAULT_TIMEOUT = 3.0 # seconds
 
