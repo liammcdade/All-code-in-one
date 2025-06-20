@@ -96,10 +96,10 @@ def get_directory_sizes(root_dir, max_depth):
                 print(f"Warning: Could not access file {filepath}: {e}")
 
         # Add sizes of direct children directories already processed (due to topdown=False)
-        for dirname in os.listdir(current_dirpath): # Need to list dirs here
+        for dirname in dirnames:  # Use dirnames from os.walk, which contains only directories
             child_dir_path = os.path.join(current_dirpath, dirname)
-            if os.path.isdir(child_dir_path) and child_dir_path in path_sizes:
-                 # Ensure it's a direct child and its size has been computed
+            if child_dir_path in path_sizes:
+                # Ensure it's a direct child and its size has been computed
                 if child_dir_path.count(os.sep) == current_dirpath.count(os.sep) + 1:
                     current_total_size += path_sizes[child_dir_path]
 
