@@ -28,32 +28,42 @@ def main():
         )
         print(f"Details: {e}")
         # Offer to create sample files
-        create_samples = input("Would you like to create sample train.csv and test.csv files? (yes/no): ").strip().lower()
-        if create_samples == 'yes':
+        create_samples = (
+            input(
+                "Would you like to create sample train.csv and test.csv files? (yes/no): "
+            )
+            .strip()
+            .lower()
+        )
+        if create_samples == "yes":
             os.makedirs("kaggle", exist_ok=True)
-            sample_train = pd.DataFrame({
-                'id': [1, 2],
-                'Temparature': [25, 30],
-                'Humidity': [60, 55],
-                'Moisture': [20, 25],
-                'Nitrogen': [10, 12],
-                'Potassium': [5, 6],
-                'Phosphorous': [3, 4],
-                'Soil Type': ['Loamy', 'Sandy'],
-                'Crop Type': ['Wheat', 'Rice'],
-                'Fertilizer Name': ['FertA', 'FertB']
-            })
-            sample_test = pd.DataFrame({
-                'id': [3, 4],
-                'Temparature': [28, 32],
-                'Humidity': [58, 53],
-                'Moisture': [22, 27],
-                'Nitrogen': [11, 13],
-                'Potassium': [5, 7],
-                'Phosphorous': [3, 5],
-                'Soil Type': ['Clay', 'Silty'],
-                'Crop Type': ['Barley', 'Maize']
-            })
+            sample_train = pd.DataFrame(
+                {
+                    "id": [1, 2],
+                    "Temparature": [25, 30],
+                    "Humidity": [60, 55],
+                    "Moisture": [20, 25],
+                    "Nitrogen": [10, 12],
+                    "Potassium": [5, 6],
+                    "Phosphorous": [3, 4],
+                    "Soil Type": ["Loamy", "Sandy"],
+                    "Crop Type": ["Wheat", "Rice"],
+                    "Fertilizer Name": ["FertA", "FertB"],
+                }
+            )
+            sample_test = pd.DataFrame(
+                {
+                    "id": [3, 4],
+                    "Temparature": [28, 32],
+                    "Humidity": [58, 53],
+                    "Moisture": [22, 27],
+                    "Nitrogen": [11, 13],
+                    "Potassium": [5, 7],
+                    "Phosphorous": [3, 5],
+                    "Soil Type": ["Clay", "Silty"],
+                    "Crop Type": ["Barley", "Maize"],
+                }
+            )
             sample_train.to_csv(train_path, index=False)
             sample_test.to_csv(test_path, index=False)
             print("Sample files created. Please rerun the script.")

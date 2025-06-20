@@ -17,4 +17,3 @@ if __name__ == "__main__":
     # So, calling cli_main() without arguments is correct here, as it will
     # pick up sys.argv internally.
     app()
-

@@ -5,14 +5,18 @@ import argparse
 import hashlib
 from collections import defaultdict
 
+
 def calculate_md5(filepath, chunk_size=8192):
     """Calculates the MD5 hash of a file."""
     try:
         with open(filepath, "rb") as f:
-            return hashlib.md5(b"".join(chunk for chunk in iter(lambda: f.read(chunk_size), b""))).hexdigest()
+            return hashlib.md5(
+                b"".join(chunk for chunk in iter(lambda: f.read(chunk_size), b""))
+            ).hexdigest()
     except IOError:
         # Could log this error if needed
         return None
+
 
 def find_duplicate_files(directory):
     """
@@ -27,7 +31,9 @@ def find_duplicate_files(directory):
     for root, _, files in os.walk(directory):
         for filename in files:
             filepath = os.path.join(root, filename)
-            if os.path.isfile(filepath) and not os.path.islink(filepath): # Ignore symlinks
+            if os.path.isfile(filepath) and not os.path.islink(
+                filepath
+            ):  # Ignore symlinks
                 try:
                     size = os.path.getsize(filepath)
                     files_by_size[size].append(filepath)
@@ -38,7 +44,7 @@ def find_duplicate_files(directory):
     duplicates_found = []
     for size, files in files_by_size.items():
         if len(files) < 2:
-            continue # No potential duplicates for this size
+            continue  # No potential duplicates for this size
 
         hashes_by_file = defaultdict(list)
         for filepath in files:
@@ -52,10 +58,11 @@ def find_duplicate_files(directory):
 
     return duplicates_found
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Find duplicate files in a directory and its subdirectories.",
-        epilog="Example: python findDuplicates.py /path/to/your/directory"
+        epilog="Example: python findDuplicates.py /path/to/your/directory",
     )
     parser.add_argument("directory", help="The directory to scan for duplicate files.")
 
@@ -70,5 +77,5 @@ if __name__ == "__main__":
             for filepath in group:
                 print(filepath)
     else:
-        if os.path.isdir(args.directory): # Check if directory was valid
+        if os.path.isdir(args.directory):  # Check if directory was valid
             print(f"No duplicate files found in '{args.directory}'.")

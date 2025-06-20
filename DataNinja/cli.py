@@ -23,15 +23,19 @@ from DataNinja.plugins.geo import GeoProcessor
 from DataNinja.plugins.ml import MLModel
 from DataNinja.plugins.sql import SQLProcessor
 
-app = typer.Typer(help="DataNinja: Unified CLI for data manipulation, cleaning, analysis, and visualization.")
+app = typer.Typer(
+    help="DataNinja: Unified CLI for data manipulation, cleaning, analysis, and visualization."
+)
 console = Console()
 
 # Session management: store DataFrame in a temp file between commands
 SESSION_FILE = os.path.join(tempfile.gettempdir(), "dataninja_session.pkl")
 
+
 def save_session(df):
     with open(SESSION_FILE, "wb") as f:
         pickle.dump(df, f)
+
 
 def load_session():
     if os.path.exists(SESSION_FILE):
@@ -40,9 +44,11 @@ def load_session():
     else:
         return None
 
+
 def clear_session():
     if os.path.exists(SESSION_FILE):
         os.remove(SESSION_FILE)
+
 
 def detect_format(filepath):
     ext = Path(filepath).suffix.lower()
@@ -61,6 +67,7 @@ def detect_format(filepath):
     else:
         return None
 
+
 def load_data(filepath, **kwargs):
     fmt = detect_format(filepath)
     if fmt == "csv":
@@ -73,8 +80,11 @@ def load_data(filepath, **kwargs):
         # For now, load first table
         handler = SQLiteHandler(filepath)
         import sqlite3
+
         with sqlite3.connect(filepath) as conn:
-            tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn)
+            tables = pd.read_sql(
+                "SELECT name FROM sqlite_master WHERE type='table'", conn
+            )
             if not tables.empty:
                 table_name = tables.iloc[0, 0]
                 return handler.load_data(table_name=table_name)
@@ -84,6 +94,7 @@ def load_data(filepath, **kwargs):
         return YAMLHandler(filepath).load_data(**kwargs)
     else:
         raise typer.Exit(f"Unsupported file format: {filepath}")
+
 
 def save_data(df, filepath):
     fmt = detect_format(filepath)
@@ -95,16 +106,21 @@ def save_data(df, filepath):
         return ExcelHandler(filepath).save_data(df, target_path=filepath)
     elif fmt == "sqlite":
         # Save to table named 'data' by default
-        return SQLiteHandler(filepath).save_data(df, table_name="data", if_exists="replace")
+        return SQLiteHandler(filepath).save_data(
+            df, table_name="data", if_exists="replace"
+        )
     elif fmt == "yaml":
         return YAMLHandler(filepath).save_data(df, target_path=filepath)
     else:
         raise typer.Exit(f"Unsupported file format for saving: {filepath}")
 
+
 # --- CLI Commands ---
 @app.command()
 def load(
-    file: str = typer.Argument(..., help="Input data file (csv, json, xlsx, sqlite, yaml)"),
+    file: str = typer.Argument(
+        ..., help="Input data file (csv, json, xlsx, sqlite, yaml)"
+    ),
 ):
     """Load a data file and start a session."""
     df = load_data(file)
@@ -118,7 +134,10 @@ def load(
     for _, row in head_df.iterrows():
         table.add_row(*[str(x) for x in row])
     console.print(table)
-    console.print(f"[cyan]Shape:[/cyan] {df.shape}, [cyan]Columns:[/cyan] {list(df.columns)}")
+    console.print(
+        f"[cyan]Shape:[/cyan] {df.shape}, [cyan]Columns:[/cyan] {list(df.columns)}"
+    )
+
 
 @app.command()
 def head(
@@ -147,6 +166,7 @@ def head(
     else:
         console.print(f"[red]Unknown output mode: {output}")
 
+
 @app.command()
 def info():
     """Show info about the current session DataFrame, including dtypes, nulls, unique, and field distribution."""
@@ -157,6 +177,7 @@ def info():
     # Show DataFrame info
     buf = []
     import io
+
     sio = io.StringIO()
     df.info(buf=sio)
     sio.seek(0)
@@ -181,9 +202,12 @@ def info():
         if df[col].nunique() > 5:
             console.print(f"  ... ({df[col].nunique()-5} more)")
 
+
 @app.command()
 def save(
-    output: str = typer.Argument(..., help="Output file path (csv, json, xlsx, sqlite, yaml)"),
+    output: str = typer.Argument(
+        ..., help="Output file path (csv, json, xlsx, sqlite, yaml)"
+    ),
 ):
     """Save the current session DataFrame to a file."""
     df = load_session()
@@ -193,15 +217,19 @@ def save(
     save_data(df, output)
     console.print(f"[green]Saved to:[/green] {output}")
 
+
 @app.command()
 def convert(
     input: str = typer.Argument(..., help="Input file (csv, json, xlsx, sqlite, yaml)"),
-    output: str = typer.Argument(..., help="Output file (csv, json, xlsx, sqlite, yaml)"),
+    output: str = typer.Argument(
+        ..., help="Output file (csv, json, xlsx, sqlite, yaml)"
+    ),
 ):
     """Convert between supported file formats."""
     df = load_data(input)
     save_data(df, output)
     console.print(f"[green]Converted {input} -> {output}")
+
 
 @app.command()
 def tail(
@@ -230,6 +258,7 @@ def tail(
     else:
         console.print(f"[red]Unknown output mode: {output}")
 
+
 @app.command()
 def describe(
     output: str = typer.Option("table", help="Output mode: table, csv, json, silent"),
@@ -239,7 +268,7 @@ def describe(
     if df is None:
         console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
         raise typer.Exit()
-    desc = df.describe(include='all').fillna("")
+    desc = df.describe(include="all").fillna("")
     if output == "table":
         table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
         table.add_column("stat")
@@ -256,6 +285,7 @@ def describe(
         pass
     else:
         console.print(f"[red]Unknown output mode: {output}")
+
 
 @app.command()
 def schema():
@@ -274,9 +304,10 @@ def schema():
             str(col),
             str(df[col].dtype),
             str(df[col].isnull().sum()),
-            str(df[col].nunique())
+            str(df[col].nunique()),
         )
     console.print(table)
+
 
 @app.command()
 def summary():
@@ -296,7 +327,9 @@ def summary():
                 lower = q1 - 1.5 * iqr
                 upper = q3 + 1.5 * iqr
                 outliers = vals[(vals < lower) | (vals > upper)]
-                console.print(f"  min: {vals.min()}, max: {vals.max()}, mean: {vals.mean():.2f}, std: {vals.std():.2f}, median: {vals.median()} (outliers: {len(outliers)})")
+                console.print(
+                    f"  min: {vals.min()}, max: {vals.max()}, mean: {vals.mean():.2f}, std: {vals.std():.2f}, median: {vals.median()} (outliers: {len(outliers)})"
+                )
             else:
                 console.print("  No numeric data.")
         else:
@@ -308,10 +341,13 @@ def summary():
                 console.print(f"  ... ({len(vc)-5} more)")
         console.print("")
 
+
 @app.command()
 def dropna(
     axis: str = typer.Option("rows", help="Drop missing data from 'rows' or 'columns'"),
-    subset: Optional[str] = typer.Option(None, help="Comma-separated columns to consider for NA"),
+    subset: Optional[str] = typer.Option(
+        None, help="Comma-separated columns to consider for NA"
+    ),
     how: str = typer.Option("any", help="'any' or 'all' NAs to drop"),
 ):
     """Drop rows or columns with missing data."""
@@ -326,9 +362,12 @@ def dropna(
     console.print(f"[green]Dropped NA from {axis} (how={how}, subset={subset_cols})")
     head(n=10)
 
+
 @app.command()
 def fillna(
-    value: Optional[str] = typer.Option(None, help="Value to fill NA with (or 'mean', 'median', 'mode')"),
+    value: Optional[str] = typer.Option(
+        None, help="Value to fill NA with (or 'mean', 'median', 'mode')"
+    ),
     columns: Optional[str] = typer.Option(None, help="Comma-separated columns to fill"),
 ):
     """Fill missing values."""
@@ -352,10 +391,15 @@ def fillna(
     console.print(f"[green]Filled NA in columns {cols} with '{value}'")
     head(n=10)
 
+
 @app.command()
 def dedup(
-    subset: Optional[str] = typer.Option(None, help="Comma-separated columns to consider for duplicates"),
-    keep: str = typer.Option("first", help="Which duplicates to keep: 'first', 'last', or 'none'"),
+    subset: Optional[str] = typer.Option(
+        None, help="Comma-separated columns to consider for duplicates"
+    ),
+    keep: str = typer.Option(
+        "first", help="Which duplicates to keep: 'first', 'last', or 'none'"
+    ),
 ):
     """Remove duplicate rows."""
     df = load_session()
@@ -369,9 +413,12 @@ def dedup(
     console.print(f"[green]Removed duplicates (subset={subset_cols}, keep={keep})")
     head(n=10)
 
+
 @app.command()
 def filter(
-    where: str = typer.Argument(..., help="Filter condition, e.g. 'age > 30 and country == \"UK\"'"),
+    where: str = typer.Argument(
+        ..., help="Filter condition, e.g. 'age > 30 and country == \"UK\"'"
+    ),
 ):
     """Filter rows by condition (pandas query syntax)."""
     df = load_session()
@@ -387,9 +434,12 @@ def filter(
     console.print(f"[green]Filtered rows where: {where}")
     head(n=10)
 
+
 @app.command()
 def select(
-    columns: str = typer.Argument(..., help="Comma-separated columns to select, e.g. 'name,age'"),
+    columns: str = typer.Argument(
+        ..., help="Comma-separated columns to select, e.g. 'name,age'"
+    ),
 ):
     """Select columns."""
     df = load_session()
@@ -402,9 +452,12 @@ def select(
     console.print(f"[green]Selected columns: {cols}")
     head(n=10)
 
+
 @app.command()
 def rename(
-    mapping: str = typer.Argument(..., help="Rename columns, e.g. 'old1:new1,old2:new2'"),
+    mapping: str = typer.Argument(
+        ..., help="Rename columns, e.g. 'old1:new1,old2:new2'"
+    ),
 ):
     """Rename columns."""
     df = load_session()
@@ -418,9 +471,12 @@ def rename(
     console.print(f"[green]Renamed columns: {rename_dict}")
     head(n=10)
 
+
 @app.command()
 def cast(
-    mapping: str = typer.Argument(..., help="Cast columns, e.g. 'age:int,salary:float'"),
+    mapping: str = typer.Argument(
+        ..., help="Cast columns, e.g. 'age:int,salary:float'"
+    ),
 ):
     """Change column types."""
     df = load_session()
@@ -439,10 +495,13 @@ def cast(
     console.print(f"[green]Casted columns: {cast_dict}")
     head(n=10)
 
+
 @app.command()
 def recode(
     column: str = typer.Argument(..., help="Column to recode"),
-    mapping: str = typer.Argument(..., help="Recode mapping, e.g. 'old1:new1,old2:new2'"),
+    mapping: str = typer.Argument(
+        ..., help="Recode mapping, e.g. 'old1:new1,old2:new2'"
+    ),
 ):
     """Recode values in a column."""
     df = load_session()
@@ -457,9 +516,12 @@ def recode(
     console.print(f"[green]Recoded column {column}: {recode_dict}")
     head(n=10)
 
+
 @app.command()
 def normalize(
-    columns: str = typer.Argument(..., help="Comma-separated columns to normalize (min-max)"),
+    columns: str = typer.Argument(
+        ..., help="Comma-separated columns to normalize (min-max)"
+    ),
 ):
     """Normalize columns to 0-1 range."""
     df = load_session()
@@ -476,9 +538,12 @@ def normalize(
     console.print(f"[green]Normalized columns: {cols}")
     head(n=10)
 
+
 @app.command()
 def trim(
-    columns: str = typer.Argument(..., help="Comma-separated columns to trim whitespace"),
+    columns: str = typer.Argument(
+        ..., help="Comma-separated columns to trim whitespace"
+    ),
 ):
     """Trim whitespace from string columns."""
     df = load_session()
@@ -492,6 +557,7 @@ def trim(
     save_session(df2)
     console.print(f"[green]Trimmed whitespace in columns: {cols}")
     head(n=10)
+
 
 @app.command()
 def lowercase(
@@ -510,10 +576,13 @@ def lowercase(
     console.print(f"[green]Lowercased columns: {cols}")
     head(n=10)
 
+
 @app.command()
 def groupby(
     by: str = typer.Argument(..., help="Comma-separated columns to group by"),
-    agg: str = typer.Argument(..., help="Aggregation, e.g. 'sum', 'mean', 'count', or col:agg,col2:agg2"),
+    agg: str = typer.Argument(
+        ..., help="Aggregation, e.g. 'sum', 'mean', 'count', or col:agg,col2:agg2"
+    ),
 ):
     """Group data and aggregate."""
     df = load_session()
@@ -530,9 +599,12 @@ def groupby(
     console.print(f"[green]Grouped by {by_cols} with aggregation {agg_dict}")
     head(n=10)
 
+
 @app.command()
 def aggregate(
-    agg: str = typer.Argument(..., help="Aggregation, e.g. 'sum', 'mean', 'count', or col:agg,col2:agg2"),
+    agg: str = typer.Argument(
+        ..., help="Aggregation, e.g. 'sum', 'mean', 'count', or col:agg,col2:agg2"
+    ),
 ):
     """Aggregate data (no groupby)."""
     df = load_session()
@@ -545,6 +617,7 @@ def aggregate(
         agg_dict = agg
     df2 = df.agg(agg_dict)
     console.print(df2)
+
 
 @app.command()
 def pivot(
@@ -560,10 +633,13 @@ def pivot(
     idx = [c.strip() for c in index.split(",")]
     cols = [c.strip() for c in columns.split(",")]
     vals = [c.strip() for c in values.split(",")]
-    df2 = df.pivot_table(index=idx, columns=cols, values=vals, aggfunc="mean").reset_index()
+    df2 = df.pivot_table(
+        index=idx, columns=cols, values=vals, aggfunc="mean"
+    ).reset_index()
     save_session(df2)
     console.print(f"[green]Pivoted table (index={idx}, columns={cols}, values={vals})")
     head(n=10)
+
 
 @app.command()
 def splitcol(
@@ -584,6 +660,7 @@ def splitcol(
     console.print(f"[green]Split column {column} into {new_cols}")
     head(n=10)
 
+
 @app.command()
 def mergecols(
     columns: str = typer.Argument(..., help="Comma-separated columns to merge"),
@@ -603,6 +680,7 @@ def mergecols(
     console.print(f"[green]Merged columns {cols} into {new}")
     head(n=10)
 
+
 @app.command()
 def sort(
     by: str = typer.Argument(..., help="Comma-separated columns to sort by"),
@@ -619,10 +697,13 @@ def sort(
     console.print(f"[green]Sorted by {by_cols} (ascending={ascending})")
     head(n=10)
 
+
 @app.command()
 def map(
     column: str = typer.Argument(..., help="Column to map"),
-    expr: str = typer.Argument(..., help="Python expression, e.g. 'x*2' or 'x.upper()'"),
+    expr: str = typer.Argument(
+        ..., help="Python expression, e.g. 'x*2' or 'x.upper()'"
+    ),
 ):
     """Apply a mapping expression to a column."""
     df = load_session()
@@ -639,10 +720,13 @@ def map(
     console.print(f"[green]Mapped column {column} with '{expr}'")
     head(n=10)
 
+
 @app.command()
 def sample(
     n: int = typer.Option(5, help="Number of rows to sample"),
-    frac: Optional[float] = typer.Option(None, help="Fraction of rows to sample (overrides n)"),
+    frac: Optional[float] = typer.Option(
+        None, help="Fraction of rows to sample (overrides n)"
+    ),
     random_state: Optional[int] = typer.Option(None, help="Random seed"),
 ):
     """Sample rows."""
@@ -657,6 +741,7 @@ def sample(
     save_session(df2)
     console.print(f"[green]Sampled rows (n={n}, frac={frac})")
     head(n=10)
+
 
 @app.command()
 def split(
@@ -678,12 +763,17 @@ def split(
     test_path = os.path.join(tempfile.gettempdir(), "dataninja_test.csv")
     train.to_csv(train_path, index=False)
     test.to_csv(test_path, index=False)
-    console.print(f"[green]Split: train ({len(train)}) -> {train_path}, test ({len(test)}) -> {test_path}")
+    console.print(
+        f"[green]Split: train ({len(train)}) -> {train_path}, test ({len(test)}) -> {test_path}"
+    )
+
 
 @app.command()
 def plot(
     kind: str = typer.Argument(..., help="Plot type: histogram, bar, line, scatter"),
-    columns: str = typer.Argument(..., help="Column(s) to plot (comma-separated, e.g. 'age' or 'age,salary')"),
+    columns: str = typer.Argument(
+        ..., help="Column(s) to plot (comma-separated, e.g. 'age' or 'age,salary')"
+    ),
     bins: int = typer.Option(10, help="Number of bins for histogram"),
     width: int = typer.Option(80, help="Plot width in characters"),
     height: int = typer.Option(20, help="Plot height in characters"),
@@ -733,9 +823,12 @@ def plot(
     if show:
         plt.show()
 
+
 @app.command()
 def sql(
-    query: str = typer.Argument(..., help="SQL query to run on the current data (use 'data' as the table name)"),
+    query: str = typer.Argument(
+        ..., help="SQL query to run on the current data (use 'data' as the table name)"
+    ),
 ):
     """Run SQL queries on the data (use 'data' as the table name)."""
     df = load_session()
@@ -745,7 +838,9 @@ def sql(
     try:
         import pandasql
     except ImportError:
-        console.print("[red]pandasql is required for SQL queries. Install with 'pip install pandasql'.")
+        console.print(
+            "[red]pandasql is required for SQL queries. Install with 'pip install pandasql'."
+        )
         raise typer.Exit()
     pysqldf = lambda q: pandasql.sqldf(q, {"data": df})
     try:
@@ -757,18 +852,24 @@ def sql(
     console.print(f"[green]SQL query executed. Result:")
     head(n=10)
 
+
 @app.command()
 def ml(
     action: str = typer.Argument(..., help="Action: train or predict"),
     target: Optional[str] = typer.Option(None, help="Target column for training"),
     model: Optional[str] = typer.Option(None, help="Model file to save/load"),
-    features: Optional[str] = typer.Option(None, help="Comma-separated feature columns (default: all except target)"),
-    input: Optional[str] = typer.Option(None, help="Input file for prediction (if not using session)"),
+    features: Optional[str] = typer.Option(
+        None, help="Comma-separated feature columns (default: all except target)"
+    ),
+    input: Optional[str] = typer.Option(
+        None, help="Input file for prediction (if not using session)"
+    ),
 ):
     """Machine learning: train or predict (LogisticRegression, RandomForest)."""
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.linear_model import LogisticRegression
     import pickle
+
     if action == "train":
         df = load_session()
         if df is None:
@@ -777,9 +878,17 @@ def ml(
         if not target:
             console.print("[red]Specify --target for training.")
             raise typer.Exit()
-        X = df.drop(columns=[target]) if not features else df[[c.strip() for c in features.split(",")]]
+        X = (
+            df.drop(columns=[target])
+            if not features
+            else df[[c.strip() for c in features.split(",")]]
+        )
         y = df[target]
-        model_obj = RandomForestClassifier() if model and model.endswith(".rf.pkl") else LogisticRegression()
+        model_obj = (
+            RandomForestClassifier()
+            if model and model.endswith(".rf.pkl")
+            else LogisticRegression()
+        )
         model_obj.fit(X, y)
         model_path = model or "dataninja_model.pkl"
         with open(model_path, "wb") as f:
@@ -804,10 +913,13 @@ def ml(
         console.print("[red]Unknown ML action. Use 'train' or 'predict'.")
         raise typer.Exit()
 
+
 @app.command()
 def geo(
     action: str = typer.Argument(..., help="Action: geocode or distance"),
-    address: Optional[str] = typer.Option(None, help="Address to geocode (for geocode action)"),
+    address: Optional[str] = typer.Option(
+        None, help="Address to geocode (for geocode action)"
+    ),
     lat1: Optional[float] = typer.Option(None, help="Latitude 1 (for distance)"),
     lon1: Optional[float] = typer.Option(None, help="Longitude 1 (for distance)"),
     lat2: Optional[float] = typer.Option(None, help="Latitude 2 (for distance)"),
@@ -832,6 +944,6 @@ def geo(
         console.print("[red]Unknown geo action. Use 'geocode' or 'distance'.")
         raise typer.Exit()
 
+
 if __name__ == "__main__":
     app()
-

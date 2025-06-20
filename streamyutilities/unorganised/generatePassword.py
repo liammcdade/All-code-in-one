@@ -8,9 +8,12 @@ import argparse
 LOWERCASE = string.ascii_lowercase
 UPPERCASE = string.ascii_uppercase
 DIGITS = string.digits
-SYMBOLS = string.punctuation # Common symbols. User might want to customize this.
+SYMBOLS = string.punctuation  # Common symbols. User might want to customize this.
 
-def generate_single_password(length, use_lowercase, use_uppercase, use_digits, use_symbols):
+
+def generate_single_password(
+    length, use_lowercase, use_uppercase, use_digits, use_symbols
+):
     """Generates a single random password based on specified criteria."""
 
     char_pool = []
@@ -34,13 +37,19 @@ def generate_single_password(length, use_lowercase, use_uppercase, use_digits, u
     if not char_pool:
         # This happens if all --no-* flags are used or if defaults were all False and none enabled
         print("Error: No character types selected. Cannot generate password.")
-        print("Please enable at least one character type (e.g., --lowercase, --digits).")
+        print(
+            "Please enable at least one character type (e.g., --lowercase, --digits)."
+        )
         return None
 
     # Check if the number of required components exceeds the desired length
     if len(password_components) > length:
-        print(f"Error: Password length {length} is too short to include all required character types.")
-        print(f"Minimum length required for current selection: {len(password_components)}.")
+        print(
+            f"Error: Password length {length} is too short to include all required character types."
+        )
+        print(
+            f"Minimum length required for current selection: {len(password_components)}."
+        )
         return None
 
     # Fill the rest of the password length with random characters from the combined pool
@@ -69,38 +78,80 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Generate random passwords with specified criteria.",
-        epilog="Example: python generatePassword.py --length 16 --no-symbols"
+        epilog="Example: python generatePassword.py --length 16 --no-symbols",
     )
     parser.add_argument(
         "--length",
         type=int,
         default=16,
-        help="Specify the length of the password(s). Default: 16."
+        help="Specify the length of the password(s). Default: 16.",
     )
     parser.add_argument(
         "--count",
         type=int,
         default=1,
-        help="Number of passwords to generate. Default: 1."
+        help="Number of passwords to generate. Default: 1.",
     )
     # Using explicit --include/--exclude pairs for broader compatibility than BooleanOptionalAction
-    parser.add_argument('--include-lowercase', dest='use_lowercase', action='store_true', help="Include lowercase letters (default: true if no specific includes, else false).")
-    parser.add_argument('--exclude-lowercase', dest='use_lowercase', action='store_false', help="Exclude lowercase letters.")
+    parser.add_argument(
+        "--include-lowercase",
+        dest="use_lowercase",
+        action="store_true",
+        help="Include lowercase letters (default: true if no specific includes, else false).",
+    )
+    parser.add_argument(
+        "--exclude-lowercase",
+        dest="use_lowercase",
+        action="store_false",
+        help="Exclude lowercase letters.",
+    )
 
-    parser.add_argument('--include-uppercase', dest='use_uppercase', action='store_true', help="Include uppercase letters (default: true if no specific includes, else false).")
-    parser.add_argument('--exclude-uppercase', dest='use_uppercase', action='store_false', help="Exclude uppercase letters.")
+    parser.add_argument(
+        "--include-uppercase",
+        dest="use_uppercase",
+        action="store_true",
+        help="Include uppercase letters (default: true if no specific includes, else false).",
+    )
+    parser.add_argument(
+        "--exclude-uppercase",
+        dest="use_uppercase",
+        action="store_false",
+        help="Exclude uppercase letters.",
+    )
 
-    parser.add_argument('--include-digits', dest='use_digits', action='store_true', help="Include digits (default: true if no specific includes, else false).")
-    parser.add_argument('--exclude-digits', dest='use_digits', action='store_false', help="Exclude digits.")
+    parser.add_argument(
+        "--include-digits",
+        dest="use_digits",
+        action="store_true",
+        help="Include digits (default: true if no specific includes, else false).",
+    )
+    parser.add_argument(
+        "--exclude-digits",
+        dest="use_digits",
+        action="store_false",
+        help="Exclude digits.",
+    )
 
-    parser.add_argument('--include-symbols', dest='use_symbols', action='store_true', help="Include symbols (default: true if no specific includes, else false).")
-    parser.add_argument('--exclude-symbols', dest='use_symbols', action='store_false', help="Exclude symbols.")
+    parser.add_argument(
+        "--include-symbols",
+        dest="use_symbols",
+        action="store_true",
+        help="Include symbols (default: true if no specific includes, else false).",
+    )
+    parser.add_argument(
+        "--exclude-symbols",
+        dest="use_symbols",
+        action="store_false",
+        help="Exclude symbols.",
+    )
 
     # Set defaults for character types
     # If NO include/exclude options are specified for a type, it defaults to True.
     # If ANY include/exclude is specified, that takes precedence.
     # This logic needs to be handled after parsing.
-    parser.set_defaults(use_lowercase=None, use_uppercase=None, use_digits=None, use_symbols=None)
+    parser.set_defaults(
+        use_lowercase=None, use_uppercase=None, use_digits=None, use_symbols=None
+    )
 
     args = parser.parse_args()
 
@@ -135,22 +186,70 @@ if __name__ == "__main__":
     # Resetting parser for clearer default handling:
     parser = argparse.ArgumentParser(
         description="Generate random passwords with specified criteria.",
-        epilog="Example: python generatePassword.py --length 16 --exclude-symbols" # Adjusted example
+        epilog="Example: python generatePassword.py --length 16 --exclude-symbols",  # Adjusted example
     )
-    parser.add_argument("--length", type=int, default=16, help="Length of the password(s). Default: 16.")
-    parser.add_argument("--count", type=int, default=1, help="Number of passwords to generate. Default: 1.")
+    parser.add_argument(
+        "--length", type=int, default=16, help="Length of the password(s). Default: 16."
+    )
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=1,
+        help="Number of passwords to generate. Default: 1.",
+    )
 
     # Python 3.9+ BooleanOptionalAction would be:
     # parser.add_argument('--lowercase', action=argparse.BooleanOptionalAction, default=True)
     # Emulating for broader compatibility:
-    parser.add_argument('--lowercase', dest='use_lowercase', action='store_true', default=True, help="Include lowercase letters (default).")
-    parser.add_argument('--no-lowercase', dest='use_lowercase', action='store_false', help="Exclude lowercase letters.")
-    parser.add_argument('--uppercase', dest='use_uppercase', action='store_true', default=True, help="Include uppercase letters (default).")
-    parser.add_argument('--no-uppercase', dest='use_uppercase', action='store_false', help="Exclude uppercase letters.")
-    parser.add_argument('--digits', dest='use_digits', action='store_true', default=True, help="Include digits (default).")
-    parser.add_argument('--no-digits', dest='use_digits', action='store_false', help="Exclude digits.")
-    parser.add_argument('--symbols', dest='use_symbols', action='store_true', default=True, help="Include symbols (default).")
-    parser.add_argument('--no-symbols', dest='use_symbols', action='store_false', help="Exclude symbols.")
+    parser.add_argument(
+        "--lowercase",
+        dest="use_lowercase",
+        action="store_true",
+        default=True,
+        help="Include lowercase letters (default).",
+    )
+    parser.add_argument(
+        "--no-lowercase",
+        dest="use_lowercase",
+        action="store_false",
+        help="Exclude lowercase letters.",
+    )
+    parser.add_argument(
+        "--uppercase",
+        dest="use_uppercase",
+        action="store_true",
+        default=True,
+        help="Include uppercase letters (default).",
+    )
+    parser.add_argument(
+        "--no-uppercase",
+        dest="use_uppercase",
+        action="store_false",
+        help="Exclude uppercase letters.",
+    )
+    parser.add_argument(
+        "--digits",
+        dest="use_digits",
+        action="store_true",
+        default=True,
+        help="Include digits (default).",
+    )
+    parser.add_argument(
+        "--no-digits", dest="use_digits", action="store_false", help="Exclude digits."
+    )
+    parser.add_argument(
+        "--symbols",
+        dest="use_symbols",
+        action="store_true",
+        default=True,
+        help="Include symbols (default).",
+    )
+    parser.add_argument(
+        "--no-symbols",
+        dest="use_symbols",
+        action="store_false",
+        help="Exclude symbols.",
+    )
 
     # The example also had --require-uppercase. This is different from --use-uppercase.
     # --use implies it's in the pool. --require implies it *must* be in the output.
@@ -158,7 +257,6 @@ if __name__ == "__main__":
     # This is a common and good behavior.
 
     args = parser.parse_args()
-
 
     if args.length <= 0:
         print("Error: Password length must be a positive integer.")
@@ -168,13 +266,22 @@ if __name__ == "__main__":
         return
 
     # Check if all character types are disabled
-    if not args.use_lowercase and not args.use_uppercase and not args.use_digits and not args.use_symbols:
-        print("Error: All character types are disabled. At least one character type must be enabled to generate a password.")
-        print("Using lowercase letters as a fallback.") # Or exit(1)
-        args.use_lowercase = True # Fallback
+    if (
+        not args.use_lowercase
+        and not args.use_uppercase
+        and not args.use_digits
+        and not args.use_symbols
+    ):
+        print(
+            "Error: All character types are disabled. At least one character type must be enabled to generate a password."
+        )
+        print("Using lowercase letters as a fallback.")  # Or exit(1)
+        args.use_lowercase = True  # Fallback
 
     print(f"Generating {args.count} password(s) with length {args.length}:")
-    print(f"(Lowercase: {args.use_lowercase}, Uppercase: {args.use_uppercase}, Digits: {args.use_digits}, Symbols: {args.use_symbols})")
+    print(
+        f"(Lowercase: {args.use_lowercase}, Uppercase: {args.use_uppercase}, Digits: {args.use_digits}, Symbols: {args.use_symbols})"
+    )
 
     for i in range(args.count):
         password = generate_single_password(
@@ -182,13 +289,13 @@ if __name__ == "__main__":
             args.use_lowercase,
             args.use_uppercase,
             args.use_digits,
-            args.use_symbols
+            args.use_symbols,
         )
         if password:
             print(password)
         else:
             # Error message already printed by generate_single_password
             print(f"Could not generate password {i+1} due to unmet constraints.")
-            break # Stop if one password fails, as others likely will too.
+            break  # Stop if one password fails, as others likely will too.
 
     print("\nPassword generation complete.")

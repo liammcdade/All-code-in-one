@@ -1,7 +1,7 @@
 def convert_weight(value, from_unit, to_unit):
     """
     Converts between different weight units.
-    
+
     Supported units: kg, g, lb, oz
     """
     # Normalize input units to lowercase
@@ -9,12 +9,7 @@ def convert_weight(value, from_unit, to_unit):
     to_unit = to_unit.lower()
 
     # Conversion factors to grams
-    to_grams = {
-        'kg': 1000,
-        'g': 1,
-        'lb': 453.592,
-        'oz': 28.3495
-    }
+    to_grams = {"kg": 1000, "g": 1, "lb": 453.592, "oz": 28.3495}
 
     # Check if units are supported
     if from_unit not in to_grams or to_unit not in to_grams:
@@ -29,13 +24,20 @@ def convert_weight(value, from_unit, to_unit):
     return round(converted_value, 4)
 
 
-def kg_to_lb(kg): return kg * 2.20462
+def kg_to_lb(kg):
+    return kg * 2.20462
 
-def lb_to_kg(lb): return lb / 2.20462
 
-def g_to_kg(g): return g / 1000
+def lb_to_kg(lb):
+    return lb / 2.20462
 
-def kg_to_g(kg): return kg * 1000
+
+def g_to_kg(g):
+    return g / 1000
+
+
+def kg_to_g(kg):
+    return kg * 1000
 
 
 def main():

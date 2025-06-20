@@ -4,7 +4,10 @@ import random
 games = [
     {"title": "The Witcher 3: Wild Hunt", "category": "RPG"},
     {"title": "Grand Theft Auto V", "category": "Action-Adventure"},
-    {"title": "The Legend of Zelda: Breath of the Wild", "category": "Action-Adventure"},
+    {
+        "title": "The Legend of Zelda: Breath of the Wild",
+        "category": "Action-Adventure",
+    },
     {"title": "Red Dead Redemption 2", "category": "Action-Adventure"},
     {"title": "Cyberpunk 2077", "category": "RPG"},
     {"title": "Elden Ring", "category": "RPG"},
@@ -173,13 +176,15 @@ games = [
     {"title": "State of Decay 3", "category": "Survival Horror"},
     {"title": "Indiana Jones and the Great Circle", "category": "Action-Adventure"},
     {"title": "Perfect Dark", "category": "FPS"},
-    {"title": "Contraband", "category": "Co-op Action"}
+    {"title": "Contraband", "category": "Co-op Action"},
 ]
+
 
 def get_categories():
     """Extracts and returns a sorted list of unique categories from the games data."""
     categories = sorted(list(set(game["category"] for game in games)))
     return ["All Categories"] + categories
+
 
 def suggest_game(category=None):
     """
@@ -203,6 +208,7 @@ def suggest_game(category=None):
     else:
         return None
 
+
 def main():
     """Main function to run the game suggester CLI."""
     print("🎮 Welcome to the Game Suggester! 🎲")
@@ -221,16 +227,16 @@ def main():
             print("Invalid input. Please enter a number.")
             continue
 
-        suggested_game = None # Initialize to None
+        suggested_game = None  # Initialize to None
 
         if 1 <= choice <= len(categories):
             selected_category = categories[choice - 1]
             if selected_category == "All Categories":
-                suggested_game = suggest_game(None) # Pass None for completely random
+                suggested_game = suggest_game(None)  # Pass None for completely random
             else:
                 suggested_game = suggest_game(selected_category)
         elif choice == len(categories) + 1:
-            suggested_game = suggest_game(None) # Pass None for completely random
+            suggested_game = suggest_game(None)  # Pass None for completely random
         else:
             print("Invalid choice. Please try again.")
             continue
@@ -243,14 +249,19 @@ def main():
 
         # Ask if the user wants another suggestion
         while True:
-            play_again = input("\nWould you like another game suggestion? (yes/no): ").lower().strip()
+            play_again = (
+                input("\nWould you like another game suggestion? (yes/no): ")
+                .lower()
+                .strip()
+            )
             if play_again in ["yes", "y"]:
-                break # Break out of inner loop to continue to main loop
+                break  # Break out of inner loop to continue to main loop
             elif play_again in ["no", "n"]:
                 print("Exiting Game Suggester. Happy gaming!")
-                return # Exit the main function, ending the program
+                return  # Exit the main function, ending the program
             else:
                 print("Invalid input. Please enter 'yes' or 'no'.")
+
 
 if __name__ == "__main__":
     main()

@@ -13,13 +13,31 @@ import sys
 # 'block_xml' for XML/HTML style comments
 LANGUAGE_COMMENT_STYLES = {
     "Python": {"extensions": [".py", ".pyw"], "style": "line", "prefix": "# "},
-    "JavaScript": {"extensions": [".js"], "style": "line", "prefix": "// "}, # Or block_c
-    "Java": {"extensions": [".java", ".scala", ".kt", ".groovy"], "style": "line", "prefix": "// "}, # Or block_c
-    "C": {"extensions": [".c", ".h"], "style": "block_c_ SPDX"}, # SPDX often first
-    "C++": {"extensions": [".cpp", ".hpp", ".cc", ".hh", ".cxx", ".hxx"], "style": "block_c_SPDX"},
-    "Shell": {"extensions": [".sh", ".bash", ".ksh", ".zsh"], "style": "line", "prefix": "# "},
+    "JavaScript": {
+        "extensions": [".js"],
+        "style": "line",
+        "prefix": "// ",
+    },  # Or block_c
+    "Java": {
+        "extensions": [".java", ".scala", ".kt", ".groovy"],
+        "style": "line",
+        "prefix": "// ",
+    },  # Or block_c
+    "C": {"extensions": [".c", ".h"], "style": "block_c_ SPDX"},  # SPDX often first
+    "C++": {
+        "extensions": [".cpp", ".hpp", ".cc", ".hh", ".cxx", ".hxx"],
+        "style": "block_c_SPDX",
+    },
+    "Shell": {
+        "extensions": [".sh", ".bash", ".ksh", ".zsh"],
+        "style": "line",
+        "prefix": "# ",
+    },
     "HTML": {"extensions": [".html", ".htm"], "style": "block_xml"},
-    "XML": {"extensions": [".xml", ".xaml", ".xsl", ".xslt", ".xsd", ".csproj"], "style": "block_xml"},
+    "XML": {
+        "extensions": [".xml", ".xaml", ".xsl", ".xslt", ".xsd", ".csproj"],
+        "style": "block_xml",
+    },
     "CSS": {"extensions": [".css"], "style": "block_c"},
     "Ruby": {"extensions": [".rb"], "style": "line", "prefix": "# "},
     "Perl": {"extensions": [".pl", ".pm"], "style": "line", "prefix": "# "},
@@ -38,18 +56,25 @@ for lang, details in LANGUAGE_COMMENT_STYLES.items():
 def load_license_template(template_filepath, year_to_insert):
     """Loads license template and replaces placeholders like {{YEAR}}."""
     try:
-        with open(template_filepath, 'r', encoding='utf-8') as f:
+        with open(template_filepath, "r", encoding="utf-8") as f:
             template_content = f.read()
         # Replace placeholders
         template_content = template_content.replace("{{YEAR}}", str(year_to_insert))
         # Add more placeholder replacements here if needed
-        return template_content.splitlines() # Return as a list of lines
+        return template_content.splitlines()  # Return as a list of lines
     except FileNotFoundError:
-        print(f"Error: License template file '{template_filepath}' not found.", file=sys.stderr)
+        print(
+            f"Error: License template file '{template_filepath}' not found.",
+            file=sys.stderr,
+        )
         return None
     except Exception as e:
-        print(f"Error reading or processing template file '{template_filepath}': {e}", file=sys.stderr)
+        print(
+            f"Error reading or processing template file '{template_filepath}': {e}",
+            file=sys.stderr,
+        )
         return None
+
 
 def format_license_for_lang(license_lines, lang_style_info):
     """Formats the license text with language-specific comment markers."""
@@ -59,30 +84,39 @@ def format_license_for_lang(license_lines, lang_style_info):
     if style == "line":
         prefix = lang_style_info["prefix"]
         for line in license_lines:
-            formatted_lines.append(f"{prefix}{line}".rstrip()) # rstrip to remove trailing space if line is empty
+            formatted_lines.append(
+                f"{prefix}{line}".rstrip()
+            )  # rstrip to remove trailing space if line is empty
     elif style == "block_c" or style == "block_c_SPDX":
         # Standard C-style block comment where each line often starts with ' * '
         # SPDX variant often has the SPDX line first, then /*
-        if style == "block_c_SPDX" and license_lines and "SPDX-License-Identifier:" in license_lines[0]:
-            formatted_lines.append(f"// {license_lines[0]}") # Assuming // for SPDX line as common practice
+        if (
+            style == "block_c_SPDX"
+            and license_lines
+            and "SPDX-License-Identifier:" in license_lines[0]
+        ):
+            formatted_lines.append(
+                f"// {license_lines[0]}"
+            )  # Assuming // for SPDX line as common practice
             formatted_lines.append("/*")
-            for line in license_lines[1:]: # Remaining lines
+            for line in license_lines[1:]:  # Remaining lines
                 formatted_lines.append(f" * {line}".rstrip())
             formatted_lines.append(" */")
-        else: # Regular block_c
+        else:  # Regular block_c
             formatted_lines.append("/*")
             for line in license_lines:
                 formatted_lines.append(f" * {line}".rstrip())
             formatted_lines.append(" */")
-    elif style == "block_xml": # HTML, XML
+    elif style == "block_xml":  # HTML, XML
         formatted_lines.append("<!--")
         for line in license_lines:
-            formatted_lines.append(f"  {line}".rstrip()) # Indent content
+            formatted_lines.append(f"  {line}".rstrip())  # Indent content
         formatted_lines.append("-->")
-    else: # Fallback or unknown style, treat as plain text (no comments)
+    else:  # Fallback or unknown style, treat as plain text (no comments)
         formatted_lines = license_lines
 
     return formatted_lines
+
 
 def check_for_existing_header(file_lines, formatted_header_lines, lang_style):
     """
@@ -100,7 +134,7 @@ def check_for_existing_header(file_lines, formatted_header_lines, lang_style):
 
     # Simple check: does the file start exactly with the formatted header?
     if len(file_lines) >= len(formatted_header_lines):
-        potential_existing_header = file_lines[:len(formatted_header_lines)]
+        potential_existing_header = file_lines[: len(formatted_header_lines)]
         if potential_existing_header == formatted_header_lines:
             return "identical"
 
@@ -121,28 +155,40 @@ def check_for_existing_header(file_lines, formatted_header_lines, lang_style):
     #     # For now, if it's not an identical match, we'll treat it as "needs update/add".
     #     pass
 
-    return None # Assume not present or different if not an exact match
+    return None  # Assume not present or different if not an exact match
 
 
-def process_target_file(filepath, license_template_lines, lang_style_map, current_year, dry_run, update_existing_flag):
+def process_target_file(
+    filepath,
+    license_template_lines,
+    lang_style_map,
+    current_year,
+    dry_run,
+    update_existing_flag,
+):
     """Processes a single file to add/update license header."""
     _, extension = os.path.splitext(filepath)
     extension = extension.lower()
 
     lang_info = lang_style_map.get(extension)
     if not lang_info:
-        print(f"Skipping '{filepath}': Unknown file type or unsupported extension '{extension}'.")
+        print(
+            f"Skipping '{filepath}': Unknown file type or unsupported extension '{extension}'."
+        )
         return "skipped_unsupported", 0
 
     # Generate the desired header for this file type
     # The template lines are already year-replaced if placeholder was used
     formatted_header = format_license_for_lang(license_template_lines, lang_info)
-    if not formatted_header: # Should not happen if lang_info is valid
-        print(f"Warning: Could not format header for '{filepath}'. Skipping.", file=sys.stderr)
+    if not formatted_header:  # Should not happen if lang_info is valid
+        print(
+            f"Warning: Could not format header for '{filepath}'. Skipping.",
+            file=sys.stderr,
+        )
         return "skipped_formatting_error", 0
 
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             original_content_lines = f.read().splitlines()
     except Exception as e:
         print(f"Error reading file '{filepath}': {e}. Skipping.", file=sys.stderr)
@@ -151,13 +197,20 @@ def process_target_file(filepath, license_template_lines, lang_style_map, curren
     # Check for shebang in the first line for certain file types (e.g. Python, Shell)
     shebang_line = None
     content_starts_at_line_idx = 0
-    if lang_info["language"] in ["Python", "Shell", "Perl", "Ruby"]: # Add others if needed
+    if lang_info["language"] in [
+        "Python",
+        "Shell",
+        "Perl",
+        "Ruby",
+    ]:  # Add others if needed
         if original_content_lines and original_content_lines[0].startswith("#!"):
             shebang_line = original_content_lines[0]
             content_starts_at_line_idx = 1
 
     # Check existing header (on content after potential shebang)
-    header_status = check_for_existing_header(original_content_lines[content_starts_at_line_idx:], formatted_header, lang_info)
+    header_status = check_for_existing_header(
+        original_content_lines[content_starts_at_line_idx:], formatted_header, lang_info
+    )
 
     if header_status == "identical":
         print(f"'{filepath}': License header already present and identical. Skipping.")
@@ -181,30 +234,37 @@ def process_target_file(filepath, license_template_lines, lang_style_map, curren
 
     lines_to_write.extend(formatted_header)
     # Add a blank line after header if content exists and header doesn't end with blank
-    if original_content_lines[content_starts_at_line_idx:] and formatted_header and formatted_header[-1].strip() != "":
+    if (
+        original_content_lines[content_starts_at_line_idx:]
+        and formatted_header
+        and formatted_header[-1].strip() != ""
+    ):
         lines_to_write.append("")
 
     lines_to_write.extend(original_content_lines[content_starts_at_line_idx:])
 
-    final_content = "\n".join(lines_to_write) + "\n" # Ensure trailing newline
+    final_content = "\n".join(lines_to_write) + "\n"  # Ensure trailing newline
 
     if dry_run:
         action_taken_message = f"'{filepath}': Would prepend license header."
-        if header_status is not None : # Placeholder for more detailed status
-             action_taken_message = f"'{filepath}': Would update existing header (simplified: treat as prepend)."
+        if header_status is not None:  # Placeholder for more detailed status
+            action_taken_message = f"'{filepath}': Would update existing header (simplified: treat as prepend)."
         print(action_taken_message)
-        return "dry_run_action", 1 # "1" meaning one file would be affected
+        return "dry_run_action", 1  # "1" meaning one file would be affected
     else:
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write(final_content)
             action_taken_message = f"'{filepath}': Prepended license header."
             if header_status is not None:
-                 action_taken_message = f"'{filepath}': Updated license header (simplified: treated as prepend)."
+                action_taken_message = f"'{filepath}': Updated license header (simplified: treated as prepend)."
             print(action_taken_message)
             return "modified", 1
         except Exception as e:
-            print(f"Error writing changes to '{filepath}': {e}. Skipping.", file=sys.stderr)
+            print(
+                f"Error writing changes to '{filepath}': {e}. Skipping.",
+                file=sys.stderr,
+            )
             return "error_writing", 0
 
 
@@ -227,32 +287,32 @@ def collect_target_files(targets_patterns_list):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Add or update license headers in source files.",
-        epilog='Example: python licenseHeaderAdder.py --template lic.txt "src/**/*.py" --year 2023'
+        epilog='Example: python licenseHeaderAdder.py --template lic.txt "src/**/*.py" --year 2023',
     )
     parser.add_argument(
         "--template",
         required=True,
-        help="Path to the license header template file (plain text)."
+        help="Path to the license header template file (plain text).",
     )
     parser.add_argument(
         "targets",
         nargs="+",
-        help="One or more file paths or glob patterns (e.g., '*.py', 'src/**/*.java'). Quote patterns."
+        help="One or more file paths or glob patterns (e.g., '*.py', 'src/**/*.java'). Quote patterns.",
     )
     parser.add_argument(
         "--year",
         default=str(datetime.now().year),
-        help="Year to use for placeholders like {{YEAR}} in the template. Defaults to current year."
+        help="Year to use for placeholders like {{YEAR}} in the template. Defaults to current year.",
     )
     parser.add_argument(
-        "--update-existing", # This flag is noted, but current implementation is simple prepend
+        "--update-existing",  # This flag is noted, but current implementation is simple prepend
         action="store_true",
-        help="If an existing header is found and is different, attempt to update it. (Currently, this means replace if any comment block is at top - very heuristic or just prepend)."
+        help="If an existing header is found and is different, attempt to update it. (Currently, this means replace if any comment block is at top - very heuristic or just prepend).",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show what files would be modified, but do not make any changes."
+        help="Show what files would be modified, but do not make any changes.",
     )
 
     args = parser.parse_args()
@@ -282,19 +342,24 @@ if __name__ == "__main__":
             f_path,
             license_lines,
             EXTENSION_TO_LANG_STYLE,
-            args.year, # Year already used in load_license_template, not strictly needed here
+            args.year,  # Year already used in load_license_template, not strictly needed here
             args.dry_run,
-            args.update_existing
+            args.update_existing,
         )
         if status == "modified" or status == "dry_run_action":
-            files_modified_count += count_modified_flag # Should be 1 if action would be taken
+            files_modified_count += (
+                count_modified_flag  # Should be 1 if action would be taken
+            )
         elif status == "skipped_identical":
             files_skipped_identical_count += 1
         elif status == "skipped_unsupported":
-            files_skipped_unsupported_count +=1
-        elif status == "error_reading" or status == "error_writing" or status == "skipped_formatting_error":
-            files_error_count +=1
-
+            files_skipped_unsupported_count += 1
+        elif (
+            status == "error_reading"
+            or status == "error_writing"
+            or status == "skipped_formatting_error"
+        ):
+            files_error_count += 1
 
     print("\n--- Summary ---")
     if args.dry_run:

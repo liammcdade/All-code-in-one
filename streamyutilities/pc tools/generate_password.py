@@ -30,6 +30,7 @@ LOWERCASE = string.ascii_lowercase
 DIGITS = string.digits
 SYMBOLS = "!@#$%^&*()_+-=[]{};':\",./<>?"
 
+
 def generate_password(length, use_uppercase, use_lowercase, use_digits, use_symbols):
     character_pool = []
     if use_uppercase:
@@ -65,37 +66,72 @@ def generate_password(length, use_uppercase, use_lowercase, use_digits, use_symb
     crypto_source.shuffle(password_chars)
     return "".join(password_chars)
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generates cryptographically strong random passwords.",
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("--length", "-l", type=int, default=12,
-                        help="Desired length of the password(s). Default is 12.")
-    parser.add_argument("--count", "-n", type=int, default=1,
-                        help="Number of passwords to generate. Default is 1.")
-    parser.add_argument("--no-uppercase", action="store_false", dest="use_uppercase",
-                        help="Exclude uppercase letters (A-Z).")
-    parser.add_argument("--no-lowercase", action="store_false", dest="use_lowercase",
-                        help="Exclude lowercase letters (a-z).")
-    parser.add_argument("--no-digits", action="store_false", dest="use_digits",
-                        help="Exclude digits (0-9).")
-    parser.add_argument("--no-symbols", action="store_false", dest="use_symbols",
-                        help="Exclude special symbols.")
+    parser.add_argument(
+        "--length",
+        "-l",
+        type=int,
+        default=12,
+        help="Desired length of the password(s). Default is 12.",
+    )
+    parser.add_argument(
+        "--count",
+        "-n",
+        type=int,
+        default=1,
+        help="Number of passwords to generate. Default is 1.",
+    )
+    parser.add_argument(
+        "--no-uppercase",
+        action="store_false",
+        dest="use_uppercase",
+        help="Exclude uppercase letters (A-Z).",
+    )
+    parser.add_argument(
+        "--no-lowercase",
+        action="store_false",
+        dest="use_lowercase",
+        help="Exclude lowercase letters (a-z).",
+    )
+    parser.add_argument(
+        "--no-digits",
+        action="store_false",
+        dest="use_digits",
+        help="Exclude digits (0-9).",
+    )
+    parser.add_argument(
+        "--no-symbols",
+        action="store_false",
+        dest="use_symbols",
+        help="Exclude special symbols.",
+    )
 
-    parser.set_defaults(use_uppercase=True, use_lowercase=True, use_digits=True, use_symbols=True)
+    parser.set_defaults(
+        use_uppercase=True, use_lowercase=True, use_digits=True, use_symbols=True
+    )
 
     args = parser.parse_args()
 
-    if not (args.use_uppercase or args.use_lowercase or args.use_digits or args.use_symbols):
+    if not (
+        args.use_uppercase or args.use_lowercase or args.use_digits or args.use_symbols
+    ):
         parser.error("At least one character type must be selected.")
 
     if args.length <= 0:
         parser.error("Password length must be positive.")
 
-    selected_types = sum([args.use_uppercase, args.use_lowercase, args.use_digits, args.use_symbols])
+    selected_types = sum(
+        [args.use_uppercase, args.use_lowercase, args.use_digits, args.use_symbols]
+    )
     if args.length < selected_types:
-        parser.error(f"Password length must be at least {selected_types} to include one of each selected type.")
+        parser.error(
+            f"Password length must be at least {selected_types} to include one of each selected type."
+        )
 
     if args.count <= 0:
         parser.error("Password count must be positive.")
@@ -116,11 +152,12 @@ def main():
                 args.use_uppercase,
                 args.use_lowercase,
                 args.use_digits,
-                args.use_symbols
+                args.use_symbols,
             )
             print(f"Password {i + 1}: {password}")
     except Exception as e:
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()

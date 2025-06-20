@@ -1,5 +1,5 @@
-
 from abc import ABC, abstractmethod
+
 
 class DataLoader(ABC):
     """
@@ -46,6 +46,7 @@ class DataLoader(ABC):
         """
         return f"Data source: {self.source}"
 
+
 # Example of how a specific loader might be structured (for illustration)
 # class SpecificFileLoader(DataLoader):
 # def load_data(self):
@@ -66,7 +67,7 @@ class DataLoader(ABC):
 #         # except Exception as e:
 #         #     raise Exception(f"Error loading data from {self.source}: {e}")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # This section is for demonstration and testing purposes.
     # It won't run when the module is imported.
 
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     print("\n--- Test with a non-existent file ---")
     try:
         loader2 = MyCustomLoader("nonexistent.txt")
-        loader2.load_data() # This should raise FileNotFoundError
+        loader2.load_data()  # This should raise FileNotFoundError
     except FileNotFoundError as e:
         print(f"Caught expected error: {e}")
     except Exception as e:
@@ -107,7 +108,7 @@ if __name__ == '__main__':
     print("\n--- Test with an invalid source for the custom loader ---")
     try:
         loader3 = MyCustomLoader("invalid_source.csv")
-        loader3.load_data() # This should raise ValueError based on MyCustomLoader's logic
+        loader3.load_data()  # This should raise ValueError based on MyCustomLoader's logic
     except ValueError as e:
         print(f"Caught expected error: {e}")
     except Exception as e:
@@ -115,7 +116,9 @@ if __name__ == '__main__':
 
     print("\n--- Test with empty source init ---")
     try:
-        loader4 = MyCustomLoader("") # This should raise ValueError from DataLoader's __init__
+        loader4 = MyCustomLoader(
+            ""
+        )  # This should raise ValueError from DataLoader's __init__
     except ValueError as e:
         print(f"Caught expected error: {e}")
     except Exception as e:

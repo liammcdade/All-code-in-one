@@ -5,6 +5,7 @@ import os
 import socket
 import argparse
 import json
+import sys
 
 psutil_available = False
 try:
@@ -30,8 +31,8 @@ def get_system_info():
             # platform.freedesktop_os_release() is Python 3.10+
             # For broader compatibility, try reading /etc/os-release directly
             if hasattr(platform, 'freedesktop_os_release'):
-                 info['linux_distribution_details'] = platform.freedesktop_os_release()
-            else: # Manual parsing of /etc/os-release
+                info['linux_distribution_details'] = platform.freedesktop_os_release()
+            else:  # Manual parsing of /etc/os-release
                 # This is a simplified parser
                 dist_details = {}
                 if os.path.exists("/etc/os-release"):
@@ -41,12 +42,12 @@ def get_system_info():
                                 key, value = line.strip().split("=", 1)
                                 dist_details[key] = value.strip('"')
                     info['linux_distribution_details'] = dist_details
-                elif os.path.exists("/etc/lsb-release"): # Fallback for older systems
-                     with open("/etc/lsb-release", "r") as f:
+                elif os.path.exists("/etc/lsb-release"):  # Fallback for older systems
+                    with open("/etc/lsb-release", "r") as f:
                         for line in f:
                             if "=" in line:
                                 key, value = line.strip().split("=", 1)
-                                dist_details[key.replace("DISTRIB_", "")] = value.strip('"') # e.g. DISTRIB_ID -> ID
+                                dist_details[key.replace("DISTRIB_", "")] = value.strip('"')  # e.g. DISTRIB_ID -> ID
                     info['linux_distribution_details'] = dist_details
 
 
@@ -72,12 +73,12 @@ def get_system_info():
             # Wrap in try-except as psutil.cpu_freq() can fail
             try:
                 cpu_freq = psutil.cpu_freq()
-                if cpu_freq: # cpu_freq() can return None
+                if cpu_freq:  # cpu_freq() can return None
                     info['cpu_frequency_current_mhz'] = cpu_freq.current
                     info['cpu_frequency_min_mhz'] = cpu_freq.min
                     info['cpu_frequency_max_mhz'] = cpu_freq.max
             except Exception as e:
-                 info['cpu_frequency_error'] = f"Could not retrieve CPU frequency: {e}"
+                info['cpu_frequency_error'] = f"Could not retrieve CPU frequency: {e}"
 
 
             # Getting detailed CPU model/brand string is platform-dependent
@@ -88,13 +89,13 @@ def get_system_info():
                         if "model name" in line:
                             info['cpu_model_name'] = line.split(":")[1].strip()
                             break # Take the first one
-            elif info['os_type'] == "Darwin": # macOS
-                 # Using sysctl on macOS
+            elif info['os_type'] == "Darwin":  # macOS
+                # Using sysctl on macOS
                 try:
                     model_name_bytes = os.popen('sysctl -n machdep.cpu.brand_string').read().strip()
                     info['cpu_model_name'] = model_name_bytes
                 except Exception:
-                    pass # Fallback to platform.processor() if sysctl fails
+                    pass  # Fallback to platform.processor() if sysctl fails
             # For Windows, platform.processor() might be the best bet with standard libs/psutil
 
         except Exception as e:
@@ -128,8 +129,8 @@ def print_readable_info(info_dict):
             print(f"{key.replace('_', ' ').title()}:")
             for sub_key, sub_value in value.items():
                 print(f"  {sub_key.replace('_', ' ').title()}: {sub_value}")
-        elif isinstance(value, tuple): # For architecture_bits_linkage
-             print(f"{key.replace('_', ' ').title()}: {value[0]} ({value[1]})")
+        elif isinstance(value, tuple):  # For architecture_bits_linkage
+            print(f"{key.replace('_', ' ').title()}: {value[0]} ({value[1]})")
         else:
             print(f"{key.replace('_', ' ').title()}: {value}")
 
@@ -158,7 +159,7 @@ if __name__ == "__main__":
             print(f"Error serializing data to JSON: {e}")
             # Fallback to readable print if JSON fails badly
             # print_readable_info(system_info_data)
-            return # Exit if JSON output was specifically requested but failed
+            sys.exit(1) # Exit if JSON output was specifically requested but failed
     else:
         # Output in human-readable format
         print_readable_info(system_info_data)

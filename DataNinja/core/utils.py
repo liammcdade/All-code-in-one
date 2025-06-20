@@ -1,11 +1,11 @@
-
 import logging
 import os
 import json
 from datetime import datetime
 
+
 # --- Configuration Loading ---
-def load_config(config_path='config.json'):
+def load_config(config_path="config.json"):
     """
     Loads a JSON configuration file.
 
@@ -16,7 +16,7 @@ def load_config(config_path='config.json'):
         dict: Configuration dictionary, or None if loading fails.
     """
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             config = json.load(f)
         return config
     except FileNotFoundError:
@@ -29,10 +29,12 @@ def load_config(config_path='config.json'):
         print(f"An unexpected error occurred while loading config '{config_path}': {e}")
         return None
 
+
 # --- Logging Setup ---
 DEFAULT_LOG_LEVEL = logging.INFO
-DEFAULT_LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-DEFAULT_LOG_FILE = 'dataninja_app.log'
+DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+DEFAULT_LOG_FILE = "dataninja_app.log"
+
 
 def setup_logging(log_level=None, log_format=None, log_file=None, module_name=__name__):
     """
@@ -62,12 +64,16 @@ def setup_logging(log_level=None, log_format=None, log_file=None, module_name=__
     # Prevent adding multiple handlers if already configured
     if logger.hasHandlers():
         # Check if it's the root logger and has a basicConfig handler
-        if logger.name == "root" and any(isinstance(h, logging.StreamHandler) and h.formatter is None for h in logger.handlers):
-             # This might be from a previous basicConfig call. Clear it.
-             logger.handlers = []
-        elif logger.name != "root": # For non-root loggers, clear existing to reconfigure
+        if logger.name == "root" and any(
+            isinstance(h, logging.StreamHandler) and h.formatter is None
+            for h in logger.handlers
+        ):
+            # This might be from a previous basicConfig call. Clear it.
             logger.handlers = []
-
+        elif (
+            logger.name != "root"
+        ):  # For non-root loggers, clear existing to reconfigure
+            logger.handlers = []
 
     logger.setLevel(level)
 
@@ -76,22 +82,35 @@ def setup_logging(log_level=None, log_format=None, log_file=None, module_name=__
 
     # Console Handler (always add for visibility, can be configured further)
     ch = logging.StreamHandler()
-    ch.setLevel(level) # Console can have its own level if desired, here same as logger
+    ch.setLevel(level)  # Console can have its own level if desired, here same as logger
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
     # File Handler (optional)
-    actual_log_file = log_file if log_file is not None else (DEFAULT_LOG_FILE if log_file is None and module_name == "DataNinjaApp" else None)
+    actual_log_file = (
+        log_file
+        if log_file is not None
+        else (
+            DEFAULT_LOG_FILE
+            if log_file is None and module_name == "DataNinjaApp"
+            else None
+        )
+    )
 
     if actual_log_file:
         try:
-            fh = logging.FileHandler(actual_log_file, mode='a') # Append mode
-            fh.setLevel(level) # File can also have its own specific level
+            fh = logging.FileHandler(actual_log_file, mode="a")  # Append mode
+            fh.setLevel(level)  # File can also have its own specific level
             fh.setFormatter(formatter)
             logger.addHandler(fh)
-            logger.info(f"Logging initialized. Outputting to console and file: {actual_log_file}")
+            logger.info(
+                f"Logging initialized. Outputting to console and file: {actual_log_file}"
+            )
         except Exception as e:
-            logger.error(f"Failed to set up file logging for {actual_log_file}: {e}", exc_info=True)
+            logger.error(
+                f"Failed to set up file logging for {actual_log_file}: {e}",
+                exc_info=True,
+            )
             logger.info("Logging initialized. Outputting to console only.")
     else:
         logger.info("Logging initialized. Outputting to console only.")
@@ -102,6 +121,7 @@ def setup_logging(log_level=None, log_format=None, log_file=None, module_name=__
     # For robust control, applications usually call setup_logging early for their main app logger.
 
     return logger
+
 
 # --- File System Utilities ---
 def ensure_directory_exists(dir_path):
@@ -124,6 +144,7 @@ def ensure_directory_exists(dir_path):
             return False
     return True
 
+
 def generate_timestamped_filename(base_name, extension, prefix=""):
     """
     Generates a filename with a timestamp. E.g., "prefix_basename_YYYYMMDD_HHMMSS.extension"
@@ -137,14 +158,14 @@ def generate_timestamped_filename(base_name, extension, prefix=""):
         str: The generated timestamped filename.
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    clean_extension = extension.lstrip('.')
+    clean_extension = extension.lstrip(".")
     if prefix:
         return f"{prefix}_{base_name}_{timestamp}.{clean_extension}"
     else:
         return f"{base_name}_{timestamp}.{clean_extension}"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("--- Utilities Demonstration ---")
 
     # --- Logging Demo ---
@@ -157,20 +178,25 @@ if __name__ == '__main__':
 
     # Setup a logger for a specific module (will inherit app_logger's file if not specified)
     # or configure its own.
-    module_logger = setup_logging(log_level='INFO', module_name="MyModule", log_file="module_specific.log")
+    module_logger = setup_logging(
+        log_level="INFO", module_name="MyModule", log_file="module_specific.log"
+    )
     module_logger.info("Info message from MyModule logger.")
-    module_logger.debug("This debug message from MyModule should NOT appear if its level is INFO.") # Will not show
+    module_logger.debug(
+        "This debug message from MyModule should NOT appear if its level is INFO."
+    )  # Will not show
 
-    another_logger = setup_logging(log_level=logging.ERROR, module_name="CriticalErrors", log_file=None) # Console only
+    another_logger = setup_logging(
+        log_level=logging.ERROR, module_name="CriticalErrors", log_file=None
+    )  # Console only
     another_logger.error("An error message from CriticalErrors logger (console only).")
-
 
     # --- Config Loading Demo ---
     print("\n--- Config Loading Demo ---")
     # Create a dummy config file for testing
     dummy_config = {"setting1": "value1", "feature_enabled": True, "threshold": 42}
     dummy_config_path = "temp_config.json"
-    with open(dummy_config_path, 'w') as f:
+    with open(dummy_config_path, "w") as f:
         json.dump(dummy_config, f, indent=2)
 
     loaded_cfg = load_config(dummy_config_path)
@@ -197,13 +223,14 @@ if __name__ == '__main__':
         print(f"Directory '{test_dir}' now exists.")
         # Clean up by removing the directory structure
         try:
-            os.removedirs("temp_test_dir") # removes empty parent dirs too
+            os.removedirs("temp_test_dir")  # removes empty parent dirs too
             print(f"Cleaned up '{test_dir}' and its parents.")
-        except OSError as e: # Might fail if not empty or other reasons
+        except OSError as e:  # Might fail if not empty or other reasons
             print(f"Could not remove temp_test_dir: {e}")
-            if os.path.exists(test_dir): os.rmdir(test_dir) # Try removing just the subdir
-            if os.path.exists("temp_test_dir"): os.rmdir("temp_test_dir")
-
+            if os.path.exists(test_dir):
+                os.rmdir(test_dir)  # Try removing just the subdir
+            if os.path.exists("temp_test_dir"):
+                os.rmdir("temp_test_dir")
 
     ts_filename = generate_timestamped_filename("report", "csv", prefix="daily")
     print(f"Generated timestamped filename: {ts_filename}")
@@ -211,5 +238,3 @@ if __name__ == '__main__':
     print(f"Generated timestamped filename (no prefix): {ts_filename_no_prefix}")
 
     print("\n--- Demonstration Complete ---")
-
-

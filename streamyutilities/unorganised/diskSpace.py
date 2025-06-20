@@ -5,9 +5,11 @@ import argparse
 import os
 import sys
 
-def bytes_to_human_readable(n_bytes, suffix='B', precision=1):
+
+def bytes_to_human_readable(n_bytes, suffix="B", precision=1):
     """Converts bytes to a human-readable string (KB, MB, GB, TB)."""
-    if n_bytes is None: return "N/A"
+    if n_bytes is None:
+        return "N/A"
     # Using 1000 for disk space (decimal) as per `df -h` (power of 10)
     # or 1024 for binary (KiB, MiB). Let's use 1024 for consistency with memory utils.
     # `df -H` uses 1000, `df -h` uses 1024. psutil returns raw bytes.
@@ -22,14 +24,18 @@ def bytes_to_human_readable(n_bytes, suffix='B', precision=1):
 
 def get_inode_usage(mountpoint):
     """Gets inode usage for a given mountpoint on POSIX systems."""
-    if hasattr(os, 'statvfs'): # POSIX specific
+    if hasattr(os, "statvfs"):  # POSIX specific
         try:
             stats = os.statvfs(mountpoint)
             total_inodes = stats.f_files
-            free_inodes = stats.f_ffree # Free inodes for non-superuser
+            free_inodes = stats.f_ffree  # Free inodes for non-superuser
             # used_inodes = total_inodes - free_inodes # This can be different from total - f_favail
             # Let's use f_favail for available to user, f_ffree for true free
-            used_inodes = total_inodes - stats.f_bfree if total_inodes >= stats.f_bfree else total_inodes - free_inodes # A common way to calculate used
+            used_inodes = (
+                total_inodes - stats.f_bfree
+                if total_inodes >= stats.f_bfree
+                else total_inodes - free_inodes
+            )  # A common way to calculate used
             # A more direct way based on how df does it:
             used_inodes = total_inodes - free_inodes
 
@@ -40,12 +46,12 @@ def get_inode_usage(mountpoint):
             return {
                 "total": total_inodes,
                 "used": used_inodes,
-                "free": free_inodes, # f_ffree is often what df -i reports as "Free"
-                "percent": percent_used
+                "free": free_inodes,  # f_ffree is often what df -i reports as "Free"
+                "percent": percent_used,
             }
         except OSError as e:
             # print(f"Warning: Could not get inode info for {mountpoint}: {e}", file=sys.stderr)
-            return None # Silently fail for paths where statvfs might not work (e.g. /proc entries)
+            return None  # Silently fail for paths where statvfs might not work (e.g. /proc entries)
     return None
 
 
@@ -59,7 +65,10 @@ def get_disk_partitions_info(specific_path=None, fstype_filter=None, show_inodes
     if specific_path:
         abs_specific_path = os.path.abspath(specific_path)
         if not os.path.exists(abs_specific_path):
-            print(f"Error: Specified path '{abs_specific_path}' does not exist.", file=sys.stderr)
+            print(
+                f"Error: Specified path '{abs_specific_path}' does not exist.",
+                file=sys.stderr,
+            )
             return []
         try:
             # Get device ID of the filesystem where specific_path resides
@@ -87,10 +96,12 @@ def get_disk_partitions_info(specific_path=None, fstype_filter=None, show_inodes
                 # However, st_dev might not be unique enough in all complex scenarios (e.g. bind mounts)
                 # For now, we'll use startswith which is simpler and often good enough.
                 # Let's use the st_dev method, it's generally more robust for physical devices.
-                 mountpoint_stat_dev = os.stat(part.mountpoint).st_dev
-                 if mountpoint_stat_dev != target_device_stat:
-                    continue # Not the partition we're looking for
-            except OSError: # Handle cases like permission denied for os.stat on a mountpoint
+                mountpoint_stat_dev = os.stat(part.mountpoint).st_dev
+                if mountpoint_stat_dev != target_device_stat:
+                    continue  # Not the partition we're looking for
+            except (
+                OSError
+            ):  # Handle cases like permission denied for os.stat on a mountpoint
                 # Fallback: check if specific path is under this mountpoint string-wise
                 if not os.path.abspath(specific_path).startswith(part.mountpoint):
                     continue
@@ -106,13 +117,15 @@ def get_disk_partitions_info(specific_path=None, fstype_filter=None, show_inodes
             if show_inodes:
                 inode_stats = get_inode_usage(part.mountpoint)
 
-            partitions_info.append({
-                "device": part.device,
-                "mountpoint": part.mountpoint,
-                "fstype": part.fstype,
-                "usage": usage,
-                "inodes": inode_stats
-            })
+            partitions_info.append(
+                {
+                    "device": part.device,
+                    "mountpoint": part.mountpoint,
+                    "fstype": part.fstype,
+                    "usage": usage,
+                    "inodes": inode_stats,
+                }
+            )
 
             # If we found the specific path's partition, no need to check others
             if target_device_stat is not None:
@@ -120,8 +133,8 @@ def get_disk_partitions_info(specific_path=None, fstype_filter=None, show_inodes
 
         except PermissionError:
             # print(f"Warning: Permission denied for {part.mountpoint}. Skipping.", file=sys.stderr)
-            pass # Silently skip inaccessible mount points
-        except Exception as e: # Catch other errors like CD-ROM drive with no media
+            pass  # Silently skip inaccessible mount points
+        except Exception as e:  # Catch other errors like CD-ROM drive with no media
             # print(f"Warning: Could not get usage for {part.mountpoint}: {e}. Skipping.", file=sys.stderr)
             pass
 
@@ -131,19 +144,26 @@ def get_disk_partitions_info(specific_path=None, fstype_filter=None, show_inodes
         # Try a direct psutil.disk_usage on the path itself as a fallback.
         try:
             usage = psutil.disk_usage(os.path.abspath(specific_path))
-            inode_stats = get_inode_usage(os.path.abspath(specific_path)) if show_inodes else None
-            partitions_info.append({
-                "device": "N/A (direct path)",
-                "mountpoint": os.path.abspath(specific_path),
-                "fstype": "N/A",
-                "usage": usage,
-                "inodes": inode_stats
-            })
+            inode_stats = (
+                get_inode_usage(os.path.abspath(specific_path)) if show_inodes else None
+            )
+            partitions_info.append(
+                {
+                    "device": "N/A (direct path)",
+                    "mountpoint": os.path.abspath(specific_path),
+                    "fstype": "N/A",
+                    "usage": usage,
+                    "inodes": inode_stats,
+                }
+            )
         except Exception as e:
-             print(f"Error: Could not get disk usage for path '{specific_path}' directly: {e}", file=sys.stderr)
-
+            print(
+                f"Error: Could not get disk usage for path '{specific_path}' directly: {e}",
+                file=sys.stderr,
+            )
 
     return partitions_info
+
 
 def print_disk_info_table(partitions_data, show_inodes_flag):
     """Prints disk usage information in a formatted table."""
@@ -159,34 +179,38 @@ def print_disk_info_table(partitions_data, show_inodes_flag):
     # Create format string dynamically based on header lengths or fixed widths
     # For simplicity, using fixed estimated widths for now
     header_fmt = "{:<25} {:<25} {:<10} {:>10} {:>10} {:>10} {:>7}"
-    row_fmt =    "{:<25} {:<25} {:<10} {:>10} {:>10} {:>10} {:>6.1f}%"
+    row_fmt = "{:<25} {:<25} {:<10} {:>10} {:>10} {:>10} {:>6.1f}%"
     if show_inodes_flag:
         header_fmt += " {:>15} {:>15} {:>15} {:>7}"
-        row_fmt +=    " {:>15} {:>15} {:>15} {:>6.1f}%"
+        row_fmt += " {:>15} {:>15} {:>15} {:>6.1f}%"
 
     print(header_fmt.format(*headers))
 
     for info in partitions_data:
-        usage = info['usage']
+        usage = info["usage"]
         row_values = [
-            info['device'][:24], # Truncate if too long
-            info['mountpoint'][:24],
-            info['fstype'],
-            bytes_to_human_readable(usage.total, suffix=''),
-            bytes_to_human_readable(usage.used, suffix=''),
-            bytes_to_human_readable(usage.free, suffix=''),
-            usage.percent
+            info["device"][:24],  # Truncate if too long
+            info["mountpoint"][:24],
+            info["fstype"],
+            bytes_to_human_readable(usage.total, suffix=""),
+            bytes_to_human_readable(usage.used, suffix=""),
+            bytes_to_human_readable(usage.free, suffix=""),
+            usage.percent,
         ]
         if show_inodes_flag:
-            inodes = info['inodes']
+            inodes = info["inodes"]
             if inodes:
-                row_values.extend([
-                    str(inodes['total']), # Already numbers, could format if very large
-                    str(inodes['used']),
-                    str(inodes['free']),
-                    inodes['percent']
-                ])
-            else: # Inode info not available/applicable
+                row_values.extend(
+                    [
+                        str(
+                            inodes["total"]
+                        ),  # Already numbers, could format if very large
+                        str(inodes["used"]),
+                        str(inodes["free"]),
+                        inodes["percent"],
+                    ]
+                )
+            else:  # Inode info not available/applicable
                 row_values.extend(["N/A"] * 4)
 
         print(row_fmt.format(*row_values))
@@ -195,30 +219,32 @@ def print_disk_info_table(partitions_data, show_inodes_flag):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Display disk space usage for mounted filesystems.",
-        epilog="Example: python diskSpace.py /var --fstype ext4 --inodes"
+        epilog="Example: python diskSpace.py /var --fstype ext4 --inodes",
     )
     parser.add_argument(
         "path",
-        nargs="?", # Optional positional argument
-        default=None, # Default to None, meaning all mount points
-        help="Optional: Specific path to check disk usage for (e.g., /home, C:\\). Shows usage for the partition containing this path."
+        nargs="?",  # Optional positional argument
+        default=None,  # Default to None, meaning all mount points
+        help="Optional: Specific path to check disk usage for (e.g., /home, C:\\). Shows usage for the partition containing this path.",
     )
     parser.add_argument(
         "--fstype",
         metavar="TYPE",
-        help="Filter filesystems by type (e.g., ext4, ntfs, apfs)."
+        help="Filter filesystems by type (e.g., ext4, ntfs, apfs).",
     )
     parser.add_argument(
         "--inodes",
         action="store_true",
-        help="Display inode usage information in addition to disk space (POSIX systems only for inodes)."
+        help="Display inode usage information in addition to disk space (POSIX systems only for inodes).",
     )
 
     args = parser.parse_args()
 
-    if args.inodes and not hasattr(os, 'statvfs'):
-        print("Warning: Inode information (--inodes) is typically available on POSIX-compliant systems (Linux, macOS). It may not be shown on this system.", file=sys.stderr)
-
+    if args.inodes and not hasattr(os, "statvfs"):
+        print(
+            "Warning: Inode information (--inodes) is typically available on POSIX-compliant systems (Linux, macOS). It may not be shown on this system.",
+            file=sys.stderr,
+        )
 
     print("Gathering disk space information...")
     disk_info_list = get_disk_partitions_info(args.path, args.fstype, args.inodes)
@@ -227,7 +253,9 @@ if __name__ == "__main__":
         print_disk_info_table(disk_info_list, args.inodes)
     else:
         if args.path:
-            print(f"No disk information found or accessible for path '{args.path}' with specified filters.")
+            print(
+                f"No disk information found or accessible for path '{args.path}' with specified filters."
+            )
         else:
             print("No disk partitions found or accessible with specified filters.")
 

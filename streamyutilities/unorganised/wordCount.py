@@ -6,6 +6,7 @@ import re
 from collections import Counter
 import string
 
+
 def analyze_file_content(filepath, top_n_words=0):
     """
     Analyzes the content of a single file to count lines, words, characters,
@@ -18,34 +19,36 @@ def analyze_file_content(filepath, top_n_words=0):
         "unique_words": 0,
         "avg_word_length": 0.0,
         "word_frequencies": Counter(),
-        "top_words_list": []
+        "top_words_list": [],
     }
 
     total_cleaned_word_length = 0
 
     try:
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
                 stats["lines"] += 1
-                stats["characters"] += len(line) # wc -m behavior (includes newline)
+                stats["characters"] += len(line)  # wc -m behavior (includes newline)
 
                 # For word splitting, use regex to find sequences of word characters.
                 # This handles punctuation better than line.split() for word counting.
                 # \w typically includes alphanumeric characters and underscore.
                 # Convert line to lowercase for consistent word counting for frequency.
-                words = re.findall(r'\b\w+\b', line.lower())
+                words = re.findall(r"\b\w+\b", line.lower())
 
                 stats["words"] += len(words)
                 stats["word_frequencies"].update(words)
                 total_cleaned_word_length += sum(map(len, words))
 
         stats["unique_words"] = len(stats["word_frequencies"])
-        stats["avg_word_length"] = total_cleaned_word_length / stats["words"] if stats["words"] else 0
+        stats["avg_word_length"] = (
+            total_cleaned_word_length / stats["words"] if stats["words"] else 0
+        )
 
         if top_n_words > 0 and stats["word_frequencies"]:
             stats["top_words_list"] = stats["word_frequencies"].most_common(top_n_words)
 
-        return stats, None # No error
+        return stats, None  # No error
 
     except FileNotFoundError:
         return None, f"Error: File '{filepath}' not found."
@@ -58,19 +61,17 @@ def analyze_file_content(filepath, top_n_words=0):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Count lines, words, characters, unique words, and analyze word frequency in files.",
-        epilog="Example: python wordCount.py report.txt --top-words 10"
+        epilog="Example: python wordCount.py report.txt --top-words 10",
     )
     parser.add_argument(
-        "filepaths",
-        nargs="+",
-        help="One or more paths to text files to analyze."
+        "filepaths", nargs="+", help="One or more paths to text files to analyze."
     )
     parser.add_argument(
         "--top-words",
         type=int,
         default=0,
         metavar="N",
-        help="Optional: Display the top N most frequent words. Default is 0 (no list)."
+        help="Optional: Display the top N most frequent words. Default is 0 (no list).",
     )
 
     args = parser.parse_args()
@@ -103,7 +104,7 @@ if __name__ == "__main__":
         if file_stats["top_words_list"]:
             print(f"  Top {args.top_words} most frequent words:")
             for word, count in file_stats["top_words_list"]:
-                print(f"    - \"{word}\": {count} times")
+                print(f'    - "{word}": {count} times')
 
     if files_processed_count > 1:
         print("\n--- Grand Totals for Processed Files ---")

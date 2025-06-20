@@ -3,6 +3,7 @@
 import os
 import argparse
 
+
 def list_files_by_type(directory, extension):
     """
     Lists all files within the given directory (and its subdirectories)
@@ -20,13 +21,16 @@ def list_files_by_type(directory, extension):
 
     return matched_files
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="List files by type in a directory.",
-        epilog="Example: python listFilesByType.py /path/to/directory .py"
+        epilog="Example: python listFilesByType.py /path/to/directory .py",
     )
     parser.add_argument("directory", help="The directory to search in.")
-    parser.add_argument("extension", help="The file extension to filter by (e.g., '.txt').")
+    parser.add_argument(
+        "extension", help="The file extension to filter by (e.g., '.txt')."
+    )
 
     args = parser.parse_args()
 
@@ -39,4 +43,6 @@ if __name__ == "__main__":
     else:
         # Check if directory exists to differentiate between no files found and bad directory
         if os.path.isdir(args.directory):
-            print(f"No files found with extension '{args.extension}' in directory '{args.directory}'.")
+            print(
+                f"No files found with extension '{args.extension}' in directory '{args.directory}'."
+            )

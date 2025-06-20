@@ -19,8 +19,19 @@ Options:
 import argparse
 import os
 
+
 def bytes_to_human_readable(n_bytes):
-    return next((f"{n_bytes / (1 << (i + 1) * 10):.2f} {s}B" for i, s in reversed(list(enumerate(('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')))) if n_bytes >= 1 << (i + 1) * 10), f"{n_bytes} B")
+    return next(
+        (
+            f"{n_bytes / (1 << (i + 1) * 10):.2f} {s}B"
+            for i, s in reversed(
+                list(enumerate(("K", "M", "G", "T", "P", "E", "Z", "Y")))
+            )
+            if n_bytes >= 1 << (i + 1) * 10
+        ),
+        f"{n_bytes} B",
+    )
+
 
 def get_directory_sizes(root_dir, max_depth):
     """
@@ -44,7 +55,9 @@ def get_directory_sizes(root_dir, max_depth):
         for filename in filenames:
             filepath = os.path.join(current_dirpath, filename)
             try:
-                if not os.path.islink(filepath): # Avoid double counting symlinks if they point within tree
+                if not os.path.islink(
+                    filepath
+                ):  # Avoid double counting symlinks if they point within tree
                     dir_size += os.path.getsize(filepath)
             except OSError as e:
                 print(f"Warning: Could not access file {filepath}: {e}")
@@ -67,11 +80,15 @@ def get_directory_sizes(root_dir, max_depth):
     # This means we want sizes of root_dir/subdir1, root_dir/subdir2, etc.
 
     # Let's use a dictionary to store sizes and accumulate from bottom up.
-    path_sizes = {} # Stores total size of all files within this path and its children
+    path_sizes = {}  # Stores total size of all files within this path and its children
 
-    for current_dirpath, _, filenames in os.walk(root_dir, topdown=False): # topdown=False for bottom-up
+    for current_dirpath, _, filenames in os.walk(
+        root_dir, topdown=False
+    ):  # topdown=False for bottom-up
         current_depth = current_dirpath.count(os.sep) - initial_depth
-        if current_depth > max_depth: # Should not be strictly necessary with topdown=False if handled right
+        if (
+            current_depth > max_depth
+        ):  # Should not be strictly necessary with topdown=False if handled right
             continue
 
         current_total_size = 0
@@ -85,7 +102,9 @@ def get_directory_sizes(root_dir, max_depth):
                 print(f"Warning: Could not access file {filepath}: {e}")
 
         # Add sizes of direct children directories already processed (due to topdown=False)
-        for dirname in dirnames:  # Use dirnames from os.walk, which contains only directories
+        for (
+            dirname
+        ) in dirnames:  # Use dirnames from os.walk, which contains only directories
             child_dir_path = os.path.join(current_dirpath, dirname)
             if child_dir_path in path_sizes:
                 # Ensure it's a direct child and its size has been computed
@@ -139,17 +158,22 @@ def get_directory_sizes(root_dir, max_depth):
 
         # We want to list directories that are themselves subdirectories of root_dir,
         # and their depth should not exceed `max_depth`.
-        if path_depth_from_root <= max_depth and path_depth_from_root >= 0 : # >=0 for root itself
-            if path == root_dir and max_depth < 0 : # Special case: if depth is -1 (or 0 in prompt), show root only.
-                                                # Let's say depth 0 means root dir itself.
-                pass # handled later
+        if (
+            path_depth_from_root <= max_depth and path_depth_from_root >= 0
+        ):  # >=0 for root itself
+            if (
+                path == root_dir and max_depth < 0
+            ):  # Special case: if depth is -1 (or 0 in prompt), show root only.
+                # Let's say depth 0 means root dir itself.
+                pass  # handled later
 
             # We want to display each directory at the specified depth, or if max_depth is large, all of them.
             # The key in display_sizes should probably be relative to root_dir for clarity.
-            relative_path = os.path.relpath(path, start=os.path.dirname(root_dir)) # Gives "root_dir/subdir" or "root_dir"
-            if path == root_dir :
-                 relative_path = os.path.basename(root_dir) + " (root itself)"
-
+            relative_path = os.path.relpath(
+                path, start=os.path.dirname(root_dir)
+            )  # Gives "root_dir/subdir" or "root_dir"
+            if path == root_dir:
+                relative_path = os.path.basename(root_dir) + " (root itself)"
 
             # We only want to show directories that are *exactly* at `max_depth` if `max_depth` is restrictive?
             # Or all dirs *up to* `max_depth`? "limit the depth of subdirectory scanning"
@@ -181,8 +205,9 @@ def get_directory_sizes(root_dir, max_depth):
                 except OSError as e:
                     print(f"Warning: Could not access file {item_path}: {e}")
         if files_in_root_size > 0:
-            final_display_data[os.path.join(os.path.basename(root_dir), "[Files_In_Root]")] = files_in_root_size
-
+            final_display_data[
+                os.path.join(os.path.basename(root_dir), "[Files_In_Root]")
+            ] = files_in_root_size
 
     # Add sizes of immediate subdirectories of root_dir
     # Their sizes in `path_sizes` are comprehensive (sum of all their children)
@@ -201,13 +226,18 @@ def get_directory_sizes(root_dir, max_depth):
     for path, size in path_sizes.items():
         # Calculate depth of 'path' relative to 'root_dir'
         # To do this, compare common path. root_dir must be prefix of path.
-        if not path.startswith(root_dir): continue # Should not happen if os.walk is on root_dir
+        if not path.startswith(root_dir):
+            continue  # Should not happen if os.walk is on root_dir
 
         path_rel_to_root = os.path.relpath(path, root_dir)
-        depth = path_rel_to_root.count(os.sep) if path_rel_to_root != '.' else 0
+        depth = path_rel_to_root.count(os.sep) if path_rel_to_root != "." else 0
 
         if depth <= max_depth:
-            display_name = os.path.join(os.path.basename(root_dir), path_rel_to_root) if path_rel_to_root != '.' else os.path.basename(root_dir)
+            display_name = (
+                os.path.join(os.path.basename(root_dir), path_rel_to_root)
+                if path_rel_to_root != "."
+                else os.path.basename(root_dir)
+            )
             output_data[display_name] = size
 
     return output_data
@@ -216,40 +246,44 @@ def get_directory_sizes(root_dir, max_depth):
 def main():
     parser = argparse.ArgumentParser(
         description="Analyzes and displays sizes of subdirectories.",
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
         "directory_path",
-        nargs='?',
+        nargs="?",
         default=os.getcwd(),
-        help="Path to the directory to analyze. Defaults to current directory."
+        help="Path to the directory to analyze. Defaults to current directory.",
     )
     parser.add_argument(
-        "--depth", "-d",
+        "--depth",
+        "-d",
         type=int,
-        default=0, # Defaulting to depth 0 (immediate children and files in root)
-                   # Let's clarify: depth 0 = root, depth 1 = root + immediate children, etc.
-                   # The prompt: "--depth 1 to only show sizes of immediate children"
-                   # This implies depth 0 would be files in root_dir.
-                   # Let's make --depth 0 mean content of target dir (files + total for each subdir)
-                   # and --depth 1 mean content of target dir's children (files + total for each grandchild)
-                   # This is like `du -d <depth>`. So depth 0 is common.
+        default=0,  # Defaulting to depth 0 (immediate children and files in root)
+        # Let's clarify: depth 0 = root, depth 1 = root + immediate children, etc.
+        # The prompt: "--depth 1 to only show sizes of immediate children"
+        # This implies depth 0 would be files in root_dir.
+        # Let's make --depth 0 mean content of target dir (files + total for each subdir)
+        # and --depth 1 mean content of target dir's children (files + total for each grandchild)
+        # This is like `du -d <depth>`. So depth 0 is common.
         help="Maximum depth of subdirectories to show. "
-             "Depth 0: Show total size of items (files/dirs) directly in directory_path. "
-             "Depth 1: Also show items in immediate subdirectories, etc. "
-             "Default: 0."
+        "Depth 0: Show total size of items (files/dirs) directly in directory_path. "
+        "Depth 1: Also show items in immediate subdirectories, etc. "
+        "Default: 0.",
     )
     parser.add_argument(
-        "--top", "-t",
+        "--top",
+        "-t",
         type=int,
         default=None,
-        help="Display only the top N largest subdirectories/files. Shows all by default."
+        help="Display only the top N largest subdirectories/files. Shows all by default.",
     )
 
     args = parser.parse_args()
 
     if not os.path.isdir(args.directory_path):
-        print(f"Error: Directory '{args.directory_path}' not found or is not a directory.")
+        print(
+            f"Error: Directory '{args.directory_path}' not found or is not a directory."
+        )
         return
 
     if args.depth < 0:
@@ -275,7 +309,13 @@ def main():
         path_sizes = {}
         abs_root_dir = os.path.abspath(args.directory_path)
 
-        for current_dirpath, dirnames, filenames in os.walk(abs_root_dir, topdown=False, onerror=lambda e: print(f"Warning: Cannot access {e.filename}: {e.strerror}")):
+        for current_dirpath, dirnames, filenames in os.walk(
+            abs_root_dir,
+            topdown=False,
+            onerror=lambda e: print(
+                f"Warning: Cannot access {e.filename}: {e.strerror}"
+            ),
+        ):
             dir_total_size = 0
             # Add size of files directly in this directory
             for filename in filenames:
@@ -287,7 +327,7 @@ def main():
                     print(f"Warning: Could not get size of file {filepath}: {e}")
 
             # Add sizes of direct children directories (already processed due to topdown=False)
-            for dirname in dirnames: # dirnames are from current_dirpath
+            for dirname in dirnames:  # dirnames are from current_dirpath
                 child_dir_abs_path = os.path.join(current_dirpath, dirname)
                 if child_dir_abs_path in path_sizes:
                     dir_total_size += path_sizes[child_dir_abs_path]
@@ -299,7 +339,7 @@ def main():
         # *below* abs_root_dir.
         # Or, more like `du`, items *within* abs_root_dir, then items *within* its children if depth > 0.
 
-        results_to_display = {} # {display_name: size}
+        results_to_display = {}  # {display_name: size}
         root_basename = os.path.basename(abs_root_dir)
 
         # Add files directly in abs_root_dir
@@ -308,12 +348,16 @@ def main():
             if os.path.isfile(item_abs_path):
                 try:
                     if not os.path.islink(item_abs_path):
-                         results_to_display[os.path.join(root_basename, item_name)] = os.path.getsize(item_abs_path)
+                        results_to_display[os.path.join(root_basename, item_name)] = (
+                            os.path.getsize(item_abs_path)
+                        )
                 except OSError as e:
                     print(f"Warning: Could not get size of file {item_abs_path}: {e}")
             elif os.path.isdir(item_abs_path):
                 # This is a subdirectory. Its total size is in path_sizes.
-                results_to_display[os.path.join(root_basename, item_name)] = path_sizes.get(item_abs_path, 0)
+                results_to_display[os.path.join(root_basename, item_name)] = (
+                    path_sizes.get(item_abs_path, 0)
+                )
 
         # If depth > 0, we need to go deeper.
         # The current `results_to_display` is effectively for depth 0.
@@ -327,7 +371,7 @@ def main():
         # We need to select which ones to show.
         # If depth D, show dirs that are D levels below `directory_path`.
 
-        display_items = {} # {relative_path_to_show: size}
+        display_items = {}  # {relative_path_to_show: size}
         initial_depth_count = abs_root_dir.count(os.sep)
 
         # Add files in the root directory if depth is 0
@@ -341,54 +385,70 @@ def main():
                     except OSError as e:
                         print(f"Warning: File access error {item_abs_path}: {e}")
 
-
         # Add directories at the specified depth
         for path, size in path_sizes.items():
             if path.startswith(abs_root_dir):
                 # path_depth = number of components in path relative to abs_root_dir
                 relative_path = os.path.relpath(path, abs_root_dir)
-                if relative_path == ".": # The root directory itself
+                if relative_path == ".":  # The root directory itself
                     current_path_script_depth = 0
                 else:
                     current_path_script_depth = relative_path.count(os.sep) + 1
 
-                if current_path_script_depth == args.depth: # Only show items at this exact depth
+                if (
+                    current_path_script_depth == args.depth
+                ):  # Only show items at this exact depth
                     # For depth 0, this means the root dir itself.
                     # For depth 1, this means immediate children of root.
-                    if relative_path == ".": # Special case for root itself if depth is 0
-                        display_items[os.path.basename(abs_root_dir) + " (Total)"] = size
+                    if (
+                        relative_path == "."
+                    ):  # Special case for root itself if depth is 0
+                        display_items[os.path.basename(abs_root_dir) + " (Total)"] = (
+                            size
+                        )
                     else:
                         display_items[relative_path] = size
 
         # Sort by size
-        sorted_items = sorted(display_items.items(), key=lambda item: item[1], reverse=True)
+        sorted_items = sorted(
+            display_items.items(), key=lambda item: item[1], reverse=True
+        )
 
         if not sorted_items:
-            print("No subdirectories or files found at the specified depth to display, or error in size calculation.")
+            print(
+                "No subdirectories or files found at the specified depth to display, or error in size calculation."
+            )
             return
 
         print(f"\nSizes for items at depth {args.depth} relative to {abs_root_dir}:")
 
         items_to_show = sorted_items
         if args.top is not None and args.top > 0:
-            items_to_show = sorted_items[:args.top]
-            if not items_to_show and sorted_items : # If top N is 0 but there are items
-                 print(f"(Top {args.top} requested, but no items to show or N is too small)")
+            items_to_show = sorted_items[: args.top]
+            if not items_to_show and sorted_items:  # If top N is 0 but there are items
+                print(
+                    f"(Top {args.top} requested, but no items to show or N is too small)"
+                )
 
-        if not items_to_show and sorted_items: # If top was applied and resulted in empty list
-             print(f"(Top {args.top} filter resulted in no items to display from {len(sorted_items)} total at this depth)")
-
+        if (
+            not items_to_show and sorted_items
+        ):  # If top was applied and resulted in empty list
+            print(
+                f"(Top {args.top} filter resulted in no items to display from {len(sorted_items)} total at this depth)"
+            )
 
         for name, size_in_bytes in items_to_show:
             print(f"  {bytes_to_human_readable(size_in_bytes):>10}  {name}")
 
         if args.top is not None and args.top > 0 and len(sorted_items) > args.top:
-            print(f"\n(Showing top {args.top} of {len(sorted_items)} items at this depth)")
-
+            print(
+                f"\n(Showing top {args.top} of {len(sorted_items)} items at this depth)"
+            )
 
     except (OSError, ValueError) as e:
         print(f"An error occurred: {e}")
         import traceback
+
         traceback.print_exc()
 
 

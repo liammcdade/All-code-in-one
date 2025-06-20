@@ -17,6 +17,7 @@ def flight_time(distance_m):
 
 def coriolis_displacement(v, t, lat):
     from numpy import sin
+
     return omega * v * sin(lat) * t**2
 
 

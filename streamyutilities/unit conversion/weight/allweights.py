@@ -5,15 +5,15 @@ def convert_weight(value, from_unit, to_unit):
     """
     # Conversion factors to grams
     to_grams = {
-        'kg': 1000,           # Kilogram
-        'g': 1,               # Gram
-        'mg': 0.001,          # Milligram
-        'lb': 453.592,        # Pound
-        'oz': 28.3495,        # Ounce
-        'st': 6350.29,        # Stone
-        't': 1_000_000,       # Metric Ton
-        'ton': 907_184.74,    # US Ton
-        'µg': 0.000001        # Microgram
+        "kg": 1000,  # Kilogram
+        "g": 1,  # Gram
+        "mg": 0.001,  # Milligram
+        "lb": 453.592,  # Pound
+        "oz": 28.3495,  # Ounce
+        "st": 6350.29,  # Stone
+        "t": 1_000_000,  # Metric Ton
+        "ton": 907_184.74,  # US Ton
+        "µg": 0.000001,  # Microgram
     }
 
     # Normalize input units to lowercase
@@ -35,13 +35,20 @@ def convert_weight(value, from_unit, to_unit):
     return round(converted_value, 6)
 
 
-def oz_to_g(oz): return oz * 28.3495
+def oz_to_g(oz):
+    return oz * 28.3495
 
-def g_to_oz(g): return g / 28.3495
 
-def lb_to_g(lb): return lb * 453.592
+def g_to_oz(g):
+    return g / 28.3495
 
-def g_to_lb(g): return g / 453.592
+
+def lb_to_g(lb):
+    return lb * 453.592
+
+
+def g_to_lb(g):
+    return g / 453.592
 
 
 def main():
@@ -55,7 +62,7 @@ def main():
 
         result = convert_weight(value, from_unit, to_unit)
         print(f"\n✅ {value} {from_unit} = {result} {to_unit}")
-    
+
     except ValueError as ve:
         print(f"⚠️ Error: {ve}")
     except Exception as e:

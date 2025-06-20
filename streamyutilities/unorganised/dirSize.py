@@ -3,6 +3,7 @@
 import os
 import argparse
 
+
 def get_human_readable_size(size_bytes):
     """Converts size in bytes to a human-readable string (KB, MB, GB)."""
     if size_bytes == 0:
@@ -14,6 +15,7 @@ def get_human_readable_size(size_bytes):
         i += 1
     return f"{size_bytes:.2f}{size_name[i]}"
 
+
 def get_dir_tree_size(path):
     """Calculates the total size of all files in a directory tree."""
     total_size = 0
@@ -21,7 +23,7 @@ def get_dir_tree_size(path):
         for dirpath, _, filenames in os.walk(path):
             for f_name in filenames:
                 fp = os.path.join(dirpath, f_name)
-                if not os.path.islink(fp): # Exclude symlinks from size calculation
+                if not os.path.islink(fp):  # Exclude symlinks from size calculation
                     try:
                         total_size += os.path.getsize(fp)
                     except OSError:
@@ -29,8 +31,11 @@ def get_dir_tree_size(path):
                         print(f"Warning: Could not get size of '{fp}'. Skipping.")
                         pass
     except OSError as e:
-        print(f"Warning: Could not walk directory '{path}': {e}. Skipping its size contribution here.")
+        print(
+            f"Warning: Could not walk directory '{path}': {e}. Skipping its size contribution here."
+        )
     return total_size
+
 
 def list_directory_sizes(base_dir, depth, sort_by, sort_order_asc):
     """
@@ -40,7 +45,7 @@ def list_directory_sizes(base_dir, depth, sort_by, sort_order_asc):
         print(f"Error: Directory '{base_dir}' not found or is not a directory.")
         return None, 0
 
-    results = {} # {path: size_in_bytes}
+    results = {}  # {path: size_in_bytes}
 
     if depth == 0:
         total_size_of_base_dir = get_dir_tree_size(base_dir)
@@ -58,7 +63,7 @@ def list_directory_sizes(base_dir, depth, sort_by, sort_order_asc):
     base_depth_count = abs_base_dir.count(os.path.sep)
 
     for dirpath, dirnames, _ in os.walk(base_dir, topdown=True):
-        abs_curr_dirpath = os.path.abspath(dirpath) # Current dirpath in absolute form
+        abs_curr_dirpath = os.path.abspath(dirpath)  # Current dirpath in absolute form
         current_level = abs_curr_dirpath.count(os.path.sep) - base_depth_count
 
         # We want to list directories AT 'depth'. So, we need to find their parents at 'depth-1'.
@@ -77,12 +82,15 @@ def list_directory_sizes(base_dir, depth, sort_by, sort_order_asc):
             # If we are already deeper than or at target_depth, stop further recursion from this path
             dirnames[:] = []
 
-
     # Sort results
     if sort_by == "name":
-        sorted_results = sorted(results.items(), key=lambda item: item[0], reverse=not sort_order_asc)
-    else: # Default sort by size
-        sorted_results = sorted(results.items(), key=lambda item: item[1], reverse=not sort_order_asc)
+        sorted_results = sorted(
+            results.items(), key=lambda item: item[0], reverse=not sort_order_asc
+        )
+    else:  # Default sort by size
+        sorted_results = sorted(
+            results.items(), key=lambda item: item[1], reverse=not sort_order_asc
+        )
 
     return sorted_results, overall_total_size
 
@@ -90,31 +98,31 @@ def list_directory_sizes(base_dir, depth, sort_by, sort_order_asc):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Display sizes of subdirectories within a specified directory.",
-        epilog="Example: python dirSize.py /my/folder --depth 2 --sort-by name"
+        epilog="Example: python dirSize.py /my/folder --depth 2 --sort-by name",
     )
     parser.add_argument(
         "directory",
         nargs="?",
         default=".",
-        help="The directory to scan (defaults to current directory)."
+        help="The directory to scan (defaults to current directory).",
     )
     parser.add_argument(
         "--depth",
         type=int,
         default=1,
-        help="Depth for scanning subdirectories (e.g., 1 for immediate children, 0 for total size of current dir). Default: 1."
+        help="Depth for scanning subdirectories (e.g., 1 for immediate children, 0 for total size of current dir). Default: 1.",
     )
     parser.add_argument(
         "--sort-by",
         choices=["size", "name"],
         default="size",
-        help="Sort output by size or by name. Default: size."
+        help="Sort output by size or by name. Default: size.",
     )
     parser.add_argument(
         "--sort-order",
         choices=["asc", "desc"],
         help="Sort order: 'asc' (ascending) or 'desc' (descending). "
-             "Defaults to 'desc' for --sort-by size, and 'asc' for --sort-by name."
+        "Defaults to 'desc' for --sort-by size, and 'asc' for --sort-by name.",
     )
 
     args = parser.parse_args()
@@ -129,23 +137,40 @@ if __name__ == "__main__":
         print("Error: Depth cannot be negative.")
         exit(1)
 
-    print(f"Scanning directory: '{os.path.abspath(args.directory)}' at depth {args.depth}")
+    print(
+        f"Scanning directory: '{os.path.abspath(args.directory)}' at depth {args.depth}"
+    )
 
-    sorted_items, total_dir_size = list_directory_sizes(args.directory, args.depth, args.sort_by, sort_asc)
+    sorted_items, total_dir_size = list_directory_sizes(
+        args.directory, args.depth, args.sort_by, sort_asc
+    )
 
     if sorted_items is not None:
         if not sorted_items and args.depth > 0:
             print(f"No subdirectories found at depth {args.depth}.")
-        elif not sorted_items and args.depth == 0 and args.directory not in dict(sorted_items):
-             # This case should be handled by the "Error: Directory not found" or if it's empty
-             print(f"Directory '{args.directory}' might be empty or inaccessible.")
+        elif (
+            not sorted_items
+            and args.depth == 0
+            and args.directory not in dict(sorted_items)
+        ):
+            # This case should be handled by the "Error: Directory not found" or if it's empty
+            print(f"Directory '{args.directory}' might be empty or inaccessible.")
         else:
             for item_path, size_bytes in sorted_items:
-                relative_path = os.path.relpath(item_path, os.path.abspath(args.directory) if args.directory != "." else os.getcwd())
-                if args.depth == 0: # For depth 0, the item_path is the base_dir itself
+                relative_path = os.path.relpath(
+                    item_path,
+                    (
+                        os.path.abspath(args.directory)
+                        if args.directory != "."
+                        else os.getcwd()
+                    ),
+                )
+                if args.depth == 0:  # For depth 0, the item_path is the base_dir itself
                     relative_path = os.path.basename(os.path.abspath(item_path))
 
                 print(f"  {get_human_readable_size(size_bytes):<10} {relative_path}")
 
         print("--------------------")
-        print(f"Total size of '{os.path.abspath(args.directory)}': {get_human_readable_size(total_dir_size)}")
+        print(
+            f"Total size of '{os.path.abspath(args.directory)}': {get_human_readable_size(total_dir_size)}"
+        )

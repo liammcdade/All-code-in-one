@@ -4,7 +4,8 @@ import psutil
 import datetime
 import argparse
 import sys
-import time # Not strictly needed if using datetime.timedelta directly
+import time  # Not strictly needed if using datetime.timedelta directly
+
 
 def format_uptime_seconds(total_seconds):
     """
@@ -16,7 +17,7 @@ def format_uptime_seconds(total_seconds):
         return "Uptime calculation error (negative duration)"
 
     days = int(total_seconds // (24 * 3600))
-    total_seconds %= (24 * 3600)
+    total_seconds %= 24 * 3600
     hours = int(total_seconds // 3600)
     total_seconds %= 3600
     minutes = int(total_seconds // 60)
@@ -34,23 +35,26 @@ def format_uptime_seconds(total_seconds):
     # or if uptime is exactly 0 seconds (e.g. very fast script run right at boot, though unlikely)
     # A more common case: "1 minute, 0 seconds" or just "1 minute".
     # Let's show seconds if it's the only component or if other components exist.
-    if seconds > 0 or not parts: # if parts is empty, means uptime < 1 minute
+    if seconds > 0 or not parts:  # if parts is empty, means uptime < 1 minute
         parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
 
-    if not parts: # Should ideally not happen if seconds are always appended if parts is empty
+    if (
+        not parts
+    ):  # Should ideally not happen if seconds are always appended if parts is empty
         return "System just booted or uptime is less than 1 second."
 
     return ", ".join(parts)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Display system uptime or boot time.",
-        epilog="Example: python uptime.py --boot-time"
+        epilog="Example: python uptime.py --boot-time",
     )
     parser.add_argument(
         "--boot-time",
         action="store_true",
-        help="Display the exact system boot time instead of uptime duration."
+        help="Display the exact system boot time instead of uptime duration.",
     )
 
     args = parser.parse_args()
@@ -72,7 +76,6 @@ if __name__ == "__main__":
             # and subtract boot_timestamp. psutil.boot_time() is usually stable.
             # The timedelta calculation is generally fine and idiomatic.
             uptime_seconds_float = uptime_timedelta.total_seconds()
-
 
             print(f"System Uptime: {format_uptime_seconds(uptime_seconds_float)}")
 

@@ -4,6 +4,7 @@ import os
 import argparse
 from collections import Counter
 
+
 def view_path_variable(check_duplicates=False, check_nondirs=False):
     """
     Retrieves, displays, and analyzes the system's PATH environment variable.
@@ -29,7 +30,9 @@ def view_path_variable(check_duplicates=False, check_nondirs=False):
     non_dir_paths_found = []
 
     for i, path_entry in enumerate(original_paths):
-        if not path_entry: # Handle empty strings if PATH has consecutive separators like "::" or leading/trailing ":"
+        if (
+            not path_entry
+        ):  # Handle empty strings if PATH has consecutive separators like "::" or leading/trailing ":"
             status_marker = "[EMPTY STRING]"
             is_ok_dir = False
         elif os.path.exists(path_entry):
@@ -39,7 +42,9 @@ def view_path_variable(check_duplicates=False, check_nondirs=False):
             else:
                 status_marker = "[EXISTS - NOT A DIRECTORY]"
                 is_ok_dir = False
-                if check_nondirs: # Only add to list if we are actively checking for this
+                if (
+                    check_nondirs
+                ):  # Only add to list if we are actively checking for this
                     non_dir_paths_found.append(path_entry)
         else:
             status_marker = "[NOT FOUND]"
@@ -61,7 +66,9 @@ def view_path_variable(check_duplicates=False, check_nondirs=False):
         print("\n--- Duplicate Path Summary ---")
         duplicates_found_summary = False
         # Iterate through unique paths that were duplicated for a cleaner summary
-        unique_duplicated_paths = {p: count for p, count in path_counts.items() if count > 1}
+        unique_duplicated_paths = {
+            p: count for p, count in path_counts.items() if count > 1
+        }
         if unique_duplicated_paths:
             duplicates_found_summary = True
             for path_val, count in sorted(unique_duplicated_paths.items()):
@@ -69,7 +76,7 @@ def view_path_variable(check_duplicates=False, check_nondirs=False):
         if not duplicates_found_summary:
             print("  No duplicate paths found in PATH.")
 
-    if check_nondirs: # This summary relies on non_dir_paths_found being populated
+    if check_nondirs:  # This summary relies on non_dir_paths_found being populated
         print("\n--- Non-Directory Path Summary ---")
         if non_dir_paths_found:
             print("  The following paths exist but are NOT directories:")
@@ -79,23 +86,25 @@ def view_path_variable(check_duplicates=False, check_nondirs=False):
                 print(f"  - '{path_val}'")
         else:
             # This message also appears if all non-dirs were also not found (so not added to list)
-            print("  No paths found that exist but are not directories (or all paths are valid directories or not found).")
+            print(
+                "  No paths found that exist but are not directories (or all paths are valid directories or not found)."
+            )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="View and analyze the system's PATH environment variable.",
-        epilog="Example: python pathViewer.py --check-duplicates --check-nondirs"
+        epilog="Example: python pathViewer.py --check-duplicates --check-nondirs",
     )
     parser.add_argument(
         "--check-duplicates",
         action="store_true",
-        help="Highlight and summarize duplicate paths in the PATH variable."
+        help="Highlight and summarize duplicate paths in the PATH variable.",
     )
     parser.add_argument(
         "--check-nondirs",
         action="store_true",
-        help="Highlight and summarize paths in PATH that exist but are not directories."
+        help="Highlight and summarize paths in PATH that exist but are not directories.",
     )
 
     args = parser.parse_args()

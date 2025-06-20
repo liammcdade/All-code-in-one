@@ -10,11 +10,12 @@ Usage:
 
 import psutil
 import datetime
-import time # For psutil.cpu_percent interval
+import time  # For psutil.cpu_percent interval
+
 
 def bytes_to_human_readable(n_bytes):
     """Converts bytes to a human-readable string (KB, MB, GB, TB)."""
-    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
     prefix = {s: 1 << (i + 1) * 10 for i, s in enumerate(symbols)}
     for s in reversed(symbols):
         if n_bytes >= prefix[s]:
@@ -22,11 +23,13 @@ def bytes_to_human_readable(n_bytes):
             return f"{value:.2f} {s}B"
     return f"{n_bytes} B"
 
+
 def print_section_header(title):
     """Prints a formatted section header."""
     print("\n" + "=" * 40)
     print(f"{title:^40}")
     print("=" * 40)
+
 
 def get_cpu_info():
     """Gathers and displays CPU information."""
@@ -38,7 +41,7 @@ def get_cpu_info():
 
     # Per-CPU usage
     per_cpu_usage = psutil.cpu_percent(interval=1, percpu=True)
-    if per_cpu_usage: # Check if percpu data is available
+    if per_cpu_usage:  # Check if percpu data is available
         print("Per-CPU Usage:")
         for i, usage in enumerate(per_cpu_usage):
             print(f"  CPU {i}: {usage}%")
@@ -52,10 +55,10 @@ def get_cpu_info():
         cpu_freq = psutil.cpu_freq()
         if cpu_freq:
             print(f"CPU Frequency (Current): {cpu_freq.current:.2f} MHz")
-            if hasattr(cpu_freq, 'min') and cpu_freq.min > 0:
-                 print(f"CPU Frequency (Min): {cpu_freq.min:.2f} MHz")
-            if hasattr(cpu_freq, 'max') and cpu_freq.max > 0:
-                 print(f"CPU Frequency (Max): {cpu_freq.max:.2f} MHz")
+            if hasattr(cpu_freq, "min") and cpu_freq.min > 0:
+                print(f"CPU Frequency (Min): {cpu_freq.min:.2f} MHz")
+            if hasattr(cpu_freq, "max") and cpu_freq.max > 0:
+                print(f"CPU Frequency (Max): {cpu_freq.max:.2f} MHz")
     except NotImplementedError:
         print("CPU frequency information not available on this system.")
 
@@ -77,7 +80,9 @@ def get_memory_info():
         print(f"  Used Swap: {bytes_to_human_readable(swap.used)}")
         print(f"  Free Swap: {bytes_to_human_readable(swap.free)}")
         print(f"  Swap Usage Percentage: {swap.percent}%")
-    except psutil.Error as e: # psutil.Error can be base for specific errors like "no swap"
+    except (
+        psutil.Error
+    ) as e:  # psutil.Error can be base for specific errors like "no swap"
         print(f"\nSwap Memory: Not available or error accessing: {e}")
 
 
@@ -99,9 +104,12 @@ def get_disk_info():
             print(f"  Free Space: {bytes_to_human_readable(usage.free)}")
             print(f"  Usage Percentage: {usage.percent}%")
         except PermissionError:
-            print(f"  Could not retrieve usage for {partition.mountpoint} due to permissions.")
+            print(
+                f"  Could not retrieve usage for {partition.mountpoint} due to permissions."
+            )
         except Exception as e:
             print(f"  Error retrieving usage for {partition.mountpoint}: {e}")
+
 
 def get_network_info():
     """Gathers and displays network I/O statistics."""
@@ -118,14 +126,15 @@ def get_network_info():
         print(f"  Bytes Received: {bytes_to_human_readable(stats.bytes_recv)}")
         print(f"  Packets Sent: {stats.packets_sent}")
         print(f"  Packets Received: {stats.packets_recv}")
-        if hasattr(stats, 'errin'): # Some systems might not have all attributes
+        if hasattr(stats, "errin"):  # Some systems might not have all attributes
             print(f"  Incoming Errors: {stats.errin}")
-        if hasattr(stats, 'errout'):
+        if hasattr(stats, "errout"):
             print(f"  Outgoing Errors: {stats.errout}")
-        if hasattr(stats, 'dropin'):
+        if hasattr(stats, "dropin"):
             print(f"  Incoming Packets Dropped: {stats.dropin}")
-        if hasattr(stats, 'dropout'):
+        if hasattr(stats, "dropout"):
             print(f"  Outgoing Packets Dropped: {stats.dropout}")
+
 
 def get_boot_time():
     """Gathers and displays system boot time."""
@@ -157,6 +166,7 @@ def main():
     print("\n" + "=" * 40)
     print("System information gathering complete.")
     print("=" * 40)
+
 
 if __name__ == "__main__":
     main()

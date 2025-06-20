@@ -9,9 +9,11 @@ import argparse
 # Does not aim for full RFC 5322 compliance as that is extremely complex.
 EMAIL_REGEX = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
+
 def extract_emails_from_content(content):
     """Extracts email addresses from a string content using regex."""
     return EMAIL_REGEX.findall(content)
+
 
 def process_files(filepaths):
     """
@@ -22,7 +24,7 @@ def process_files(filepaths):
 
     for filepath in filepaths:
         try:
-            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             emails_in_file = extract_emails_from_content(content)
@@ -34,24 +36,27 @@ def process_files(filepaths):
         except IOError as e:
             print(f"Error reading file '{filepath}': {e}. Skipping.")
         except Exception as e:
-            print(f"An unexpected error occurred with file '{filepath}': {e}. Skipping.")
+            print(
+                f"An unexpected error occurred with file '{filepath}': {e}. Skipping."
+            )
 
     return unique_emails
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Extract email addresses from one or more files.",
-        epilog="Example: python extractEmails.py doc.txt --output emails.txt"
+        epilog="Example: python extractEmails.py doc.txt --output emails.txt",
     )
     parser.add_argument(
         "filepaths",
         nargs="+",
-        help="One or more paths to files to process for email extraction."
+        help="One or more paths to files to process for email extraction.",
     )
     parser.add_argument(
         "--output",
         metavar="OUTPUT_FILE",
-        help="Optional: File to save the extracted unique email addresses to (one email per line)."
+        help="Optional: File to save the extracted unique email addresses to (one email per line).",
     )
 
     args = parser.parse_args()
@@ -62,11 +67,15 @@ if __name__ == "__main__":
     if not extracted_emails_set:
         print("\nNo email addresses found in the processed files.")
     else:
-        print(f"\nFound a total of {len(extracted_emails_set)} unique email address(es).")
+        print(
+            f"\nFound a total of {len(extracted_emails_set)} unique email address(es)."
+        )
         if args.output:
             try:
-                with open(args.output, 'w', encoding='utf-8') as outfile:
-                    for email in sorted(list(extracted_emails_set)): # Sort for consistent output
+                with open(args.output, "w", encoding="utf-8") as outfile:
+                    for email in sorted(
+                        list(extracted_emails_set)
+                    ):  # Sort for consistent output
                         outfile.write(email + "\n")
                 print(f"Successfully saved extracted emails to '{args.output}'.")
             except IOError as e:
@@ -76,7 +85,9 @@ if __name__ == "__main__":
                     print(email)
         else:
             print("Extracted unique email addresses:")
-            for email in sorted(list(extracted_emails_set)): # Sort for consistent output
+            for email in sorted(
+                list(extracted_emails_set)
+            ):  # Sort for consistent output
                 print(email)
 
     print("\nExtraction process complete.")

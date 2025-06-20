@@ -1,5 +1,5 @@
-
 import pandas as pd
+
 
 class DataCleaner:
     """
@@ -37,12 +37,15 @@ class DataCleaner:
                     self.data = pd.DataFrame(data)
             except Exception as e:
                 # If conversion fails, store as is, but some methods might not work
-                print(f"Warning: Could not convert input list to DataFrame: {e}. Storing as is.")
+                print(
+                    f"Warning: Could not convert input list to DataFrame: {e}. Storing as is."
+                )
                 self.data = data
         else:
             # Potentially support other types or raise error
-            raise TypeError("Unsupported data type. Please provide a pandas DataFrame or a list of lists.")
-
+            raise TypeError(
+                "Unsupported data type. Please provide a pandas DataFrame or a list of lists."
+            )
 
     def clean_data(self, operations=None):
         """
@@ -59,31 +62,39 @@ class DataCleaner:
             The cleaned data (typically a pandas DataFrame).
         """
         if not isinstance(self.data, pd.DataFrame):
-            print("Warning: Data is not a pandas DataFrame. Some cleaning operations may not apply or may fail.")
+            print(
+                "Warning: Data is not a pandas DataFrame. Some cleaning operations may not apply or may fail."
+            )
             return self.data
 
         cleaned_df = self.data.copy()
 
         if operations:
             for op in operations:
-                method_name = op.get('method')
-                params = op.get('params', {})
+                method_name = op.get("method")
+                params = op.get("params", {})
                 if hasattr(self, method_name) and callable(getattr(self, method_name)):
                     print(f"Applying operation: {method_name} with params: {params}")
                     cleaned_df = getattr(self, method_name)(cleaned_df, **params)
                 else:
-                    print(f"Warning: Unknown cleaning method '{method_name}'. Skipping.")
+                    print(
+                        f"Warning: Unknown cleaning method '{method_name}'. Skipping."
+                    )
         else:
             # Placeholder for default cleaning if no operations are specified
-            print("No specific cleaning operations provided. Applying default steps (if any).")
+            print(
+                "No specific cleaning operations provided. Applying default steps (if any)."
+            )
             # Example: cleaned_df = self.remove_missing_values(cleaned_df)
             # cleaned_df = self.remove_duplicates(cleaned_df)
             pass
 
-        self.data = cleaned_df # Update internal data
+        self.data = cleaned_df  # Update internal data
         return self.data
 
-    def remove_missing_values(self, df, threshold=None, subset=None, strategy='drop_rows'):
+    def remove_missing_values(
+        self, df, threshold=None, subset=None, strategy="drop_rows"
+    ):
         """
         Removes rows or columns with missing values.
 
@@ -104,10 +115,12 @@ class DataCleaner:
             print("Data is not a DataFrame. Cannot remove missing values effectively.")
             return df
 
-        print(f"Removing missing values (strategy: {strategy}, threshold: {threshold}, subset: {subset})...")
-        if strategy == 'drop_rows':
+        print(
+            f"Removing missing values (strategy: {strategy}, threshold: {threshold}, subset: {subset})..."
+        )
+        if strategy == "drop_rows":
             return df.dropna(thresh=threshold, subset=subset, axis=0)
-        elif strategy == 'drop_cols':
+        elif strategy == "drop_cols":
             return df.dropna(thresh=threshold, subset=subset, axis=1)
         # Add 'fill' strategy later
         else:
@@ -132,7 +145,9 @@ class DataCleaner:
             return df
 
         if column not in df.columns:
-            print(f"Warning: Column '{column}' not found in DataFrame. Skipping type conversion.")
+            print(
+                f"Warning: Column '{column}' not found in DataFrame. Skipping type conversion."
+            )
             return df
 
         print(f"Converting column '{column}' to type '{new_type}'...")
@@ -142,7 +157,7 @@ class DataCleaner:
             print(f"Error converting column '{column}' to {new_type}: {e}")
         return df
 
-    def remove_duplicates(self, df, subset=None, keep='first'):
+    def remove_duplicates(self, df, subset=None, keep="first"):
         """
         Removes duplicate rows from the DataFrame.
 
@@ -169,19 +184,20 @@ class DataCleaner:
         """
         return self.data
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     print("--- DataCleaner Demonstration ---")
 
     # Example 1: List of lists
     print("\n--- Example 1: List of Lists ---")
     data_lol = [
-        ['Name', 'Age', 'City', 'Value'],
-        ['Alice', 28, 'New York', '100'],
-        ['Bob', 35, 'Los Angeles', '200'],
-        ['Charlie', 22, 'Chicago', '150'],
-        ['David', None, 'New York', '100'], # Missing age
-        ['Eve', 35, 'Los Angeles', '200'],   # Duplicate of Bob for demonstration
-        ['Frank', 40, None, '300']        # Missing City
+        ["Name", "Age", "City", "Value"],
+        ["Alice", 28, "New York", "100"],
+        ["Bob", 35, "Los Angeles", "200"],
+        ["Charlie", 22, "Chicago", "150"],
+        ["David", None, "New York", "100"],  # Missing age
+        ["Eve", 35, "Los Angeles", "200"],  # Duplicate of Bob for demonstration
+        ["Frank", 40, None, "300"],  # Missing City
     ]
     try:
         cleaner1 = DataCleaner(data_lol)
@@ -190,9 +206,18 @@ if __name__ == '__main__':
 
         # Define operations
         ops1 = [
-            {'method': 'remove_missing_values', 'params': {'subset': ['Age']}}, # Remove rows where Age is NA
-            {'method': 'convert_column_type', 'params': {'column': 'Value', 'new_type': int}},
-            {'method': 'remove_duplicates', 'params': {'subset': ['Age', 'City'], 'keep': 'first'}}
+            {
+                "method": "remove_missing_values",
+                "params": {"subset": ["Age"]},
+            },  # Remove rows where Age is NA
+            {
+                "method": "convert_column_type",
+                "params": {"column": "Value", "new_type": int},
+            },
+            {
+                "method": "remove_duplicates",
+                "params": {"subset": ["Age", "City"], "keep": "first"},
+            },
         ]
         cleaner1.clean_data(operations=ops1)
         print("\nCleaned DataFrame (from list of lists):")
@@ -202,22 +227,40 @@ if __name__ == '__main__':
 
     # Example 2: Pandas DataFrame
     print("\n--- Example 2: Pandas DataFrame ---")
-    data_df = pd.DataFrame({
-        'ID': [1, 2, 3, 4, 5, 6, 7],
-        'Product': ['A', 'B', 'A', 'C', 'B', 'D', 'A'],
-        'Price': [10.0, 20.5, 10.0, 5.0, 21.0, 15.5, 9.99],
-        'Quantity': [5, None, 3, 10, 2, 6, 5], # Missing quantity
-        'Status': ['Active', 'Inactive', 'Active', 'Active', None, 'Shipped', 'Active'] # Missing Status
-    })
+    data_df = pd.DataFrame(
+        {
+            "ID": [1, 2, 3, 4, 5, 6, 7],
+            "Product": ["A", "B", "A", "C", "B", "D", "A"],
+            "Price": [10.0, 20.5, 10.0, 5.0, 21.0, 15.5, 9.99],
+            "Quantity": [5, None, 3, 10, 2, 6, 5],  # Missing quantity
+            "Status": [
+                "Active",
+                "Inactive",
+                "Active",
+                "Active",
+                None,
+                "Shipped",
+                "Active",
+            ],  # Missing Status
+        }
+    )
     try:
-        cleaner2 = DataCleaner(data_df.copy()) # Use .copy() to avoid modifying original df outside class
+        cleaner2 = DataCleaner(
+            data_df.copy()
+        )  # Use .copy() to avoid modifying original df outside class
         print("Initial DataFrame:")
         print(cleaner2.get_cleaned_data())
 
         # Clean by calling methods directly
-        df_cleaned = cleaner2.remove_missing_values(cleaner2.get_cleaned_data(), subset=['Quantity'])
-        df_cleaned = cleaner2.convert_column_type(df_cleaned, column='Price', new_type=float)
-        df_cleaned = cleaner2.remove_duplicates(df_cleaned, subset=['Product'], keep='last')
+        df_cleaned = cleaner2.remove_missing_values(
+            cleaner2.get_cleaned_data(), subset=["Quantity"]
+        )
+        df_cleaned = cleaner2.convert_column_type(
+            df_cleaned, column="Price", new_type=float
+        )
+        df_cleaned = cleaner2.remove_duplicates(
+            df_cleaned, subset=["Product"], keep="last"
+        )
 
         # Update cleaner's internal data if desired (or just use df_cleaned)
         cleaner2.data = df_cleaned
@@ -239,5 +282,3 @@ if __name__ == '__main__':
         cleaner4 = DataCleaner("just a string")
     except TypeError as e:
         print(f"Caught expected error: {e}")
-
-

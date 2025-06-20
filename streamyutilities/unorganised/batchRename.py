@@ -3,7 +3,10 @@
 import os
 import argparse
 
-def batch_rename_files(directory, search_pattern, replace_pattern, extension=None, dry_run=False):
+
+def batch_rename_files(
+    directory, search_pattern, replace_pattern, extension=None, dry_run=False
+):
     """
     Renames files in a directory based on search and replace patterns.
     """
@@ -11,13 +14,13 @@ def batch_rename_files(directory, search_pattern, replace_pattern, extension=Non
         print(f"Error: Directory '{directory}' not found.")
         return
 
-    rename_operations = [] # List to store (original_path, new_path) tuples
+    rename_operations = []  # List to store (original_path, new_path) tuples
 
     for filename in os.listdir(directory):
         original_filepath = os.path.join(directory, filename)
 
         if not os.path.isfile(original_filepath):
-            continue # Skip directories or other non-file entries
+            continue  # Skip directories or other non-file entries
 
         # Filter by extension if provided
         if extension:
@@ -31,7 +34,7 @@ def batch_rename_files(directory, search_pattern, replace_pattern, extension=Non
 
             # Avoid renaming to an existing filename (simple check)
             if new_filepath == original_filepath:
-                continue # No actual change
+                continue  # No actual change
 
             rename_operations.append((original_filepath, new_filepath))
 
@@ -51,17 +54,21 @@ def batch_rename_files(directory, search_pattern, replace_pattern, extension=Non
     # Ensure input is handled correctly in various environments
     try:
         confirm = input("\nProceed with these renames? (yes/no): ").strip().lower()
-    except EOFError: # Handle cases where stdin is not available (e.g. piped input)
+    except EOFError:  # Handle cases where stdin is not available (e.g. piped input)
         print("\nConfirmation input not available. Aborting.")
         confirm = "no"
 
-    if confirm == 'yes':
+    if confirm == "yes":
         renamed_count = 0
         skipped_because_exists = []
         for old_path, new_path in rename_operations:
             if os.path.exists(new_path):
-                print(f"Skipping rename of '{os.path.basename(old_path)}' to '{os.path.basename(new_path)}' as target already exists.")
-                skipped_because_exists.append((os.path.basename(old_path), os.path.basename(new_path)))
+                print(
+                    f"Skipping rename of '{os.path.basename(old_path)}' to '{os.path.basename(new_path)}' as target already exists."
+                )
+                skipped_because_exists.append(
+                    (os.path.basename(old_path), os.path.basename(new_path))
+                )
                 continue
             try:
                 os.rename(old_path, new_path)
@@ -73,26 +80,29 @@ def batch_rename_files(directory, search_pattern, replace_pattern, extension=Non
         if skipped_because_exists:
             print("\nSkipped renames due to target file already existing:")
             for old, new in skipped_because_exists:
-                 print(f"  '{old}'  ->  '{new}'")
+                print(f"  '{old}'  ->  '{new}'")
     else:
         print("\nRenaming aborted by user.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Batch rename files in a directory.",
-        epilog="Example: python batchRename.py /path/to/pics \"IMG_\" \"Vacation2024_\" --extension .jpg"
+        epilog='Example: python batchRename.py /path/to/pics "IMG_" "Vacation2024_" --extension .jpg',
     )
     parser.add_argument("directory", help="The directory containing files to rename.")
     parser.add_argument("search_pattern", help="The text to find in filenames.")
-    parser.add_argument("replace_pattern", help="The text to replace the search pattern with.")
+    parser.add_argument(
+        "replace_pattern", help="The text to replace the search pattern with."
+    )
     parser.add_argument(
         "--extension",
-        help="Optional: Process only files with this extension (e.g., '.txt')."
+        help="Optional: Process only files with this extension (e.g., '.txt').",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show what renames would occur without actually performing them."
+        help="Show what renames would occur without actually performing them.",
     )
 
     args = parser.parse_args()
@@ -102,5 +112,5 @@ if __name__ == "__main__":
         args.search_pattern,
         args.replace_pattern,
         args.extension,
-        args.dry_run
+        args.dry_run,
     )

@@ -30,12 +30,13 @@ Examples:
 import argparse
 import os
 
+
 def generate_new_filename(filename, search_pattern, replace_pattern, prefix, suffix):
     """Generates the new filename based on search/replace, prefix, and suffix."""
     name, ext = os.path.splitext(filename)
 
     # Apply search and replace
-    if search_pattern: # Only replace if search_pattern is not empty
+    if search_pattern:  # Only replace if search_pattern is not empty
         name = name.replace(search_pattern, replace_pattern)
 
     # Add prefix
@@ -48,7 +49,16 @@ def generate_new_filename(filename, search_pattern, replace_pattern, prefix, suf
 
     return name + ext
 
-def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix, dry_run, auto_confirm=False):
+
+def batch_rename(
+    directory_path,
+    search_pattern,
+    replace_pattern,
+    prefix,
+    suffix,
+    dry_run,
+    auto_confirm=False,
+):
     """Performs the batch renaming operation."""
 
     print(f"\nScanning directory: {directory_path}")
@@ -63,7 +73,7 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
     if dry_run:
         print("\nDRY RUN MODE: No files will be renamed.")
 
-    proposed_renames = [] # List of (original_path, new_path) tuples
+    proposed_renames = []  # List of (original_path, new_path) tuples
     files_to_rename_count = 0
 
     # First pass: identify files and generate new names
@@ -71,12 +81,16 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
         original_filepath = os.path.join(directory_path, filename)
 
         if os.path.isfile(original_filepath):
-            new_filename = generate_new_filename(filename, search_pattern, replace_pattern, prefix, suffix)
+            new_filename = generate_new_filename(
+                filename, search_pattern, replace_pattern, prefix, suffix
+            )
             new_filepath = os.path.join(directory_path, new_filename)
 
-            if new_filename != filename: # If there's an actual change
+            if new_filename != filename:  # If there's an actual change
                 files_to_rename_count += 1
-                proposed_renames.append((original_filepath, new_filepath, filename, new_filename))
+                proposed_renames.append(
+                    (original_filepath, new_filepath, filename, new_filename)
+                )
 
     if not proposed_renames:
         print("\nNo files found matching the criteria or no changes would be made.")
@@ -85,8 +99,10 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
     print(f"\nFound {files_to_rename_count} file(s) that would be renamed:")
 
     # Check for potential conflicts before showing proposed renames
-    potential_conflicts = {} # new_name -> list of original_names
-    final_rename_plan = [] # (original_path, new_path, original_filename, new_filename) without conflicts
+    potential_conflicts = {}  # new_name -> list of original_names
+    final_rename_plan = (
+        []
+    )  # (original_path, new_path, original_filename, new_filename) without conflicts
 
     for orig_fp, new_fp, orig_fn, new_fn in proposed_renames:
         # Check if new_fp would overwrite an existing file NOT part of the current batch rename
@@ -96,8 +112,10 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
         # Check if new_fp already exists and is NOT one of the original files being renamed
         existing_original_paths = [item[0] for item in proposed_renames]
         if os.path.exists(new_fp) and new_fp not in existing_original_paths:
-            print(f"  - WARNING: '{orig_fn}' -> '{new_fn}'. CONFLICT: '{new_fn}' already exists and will be SKIPPED.")
-            continue # Skip this rename
+            print(
+                f"  - WARNING: '{orig_fn}' -> '{new_fn}'. CONFLICT: '{new_fn}' already exists and will be SKIPPED."
+            )
+            continue  # Skip this rename
 
         # Check if multiple files in this batch would be renamed to the same new_filename
         if new_fn in potential_conflicts:
@@ -111,12 +129,13 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
     actual_renames_to_perform = []
     for orig_fp, new_fp, orig_fn, new_fn in final_rename_plan:
         if len(potential_conflicts[new_fn]) > 1:
-            print(f"  - WARNING: Multiple files would be renamed to '{new_fn}' (from {', '.join(potential_conflicts[new_fn])}). SKIPPING these renames to prevent conflict.")
+            print(
+                f"  - WARNING: Multiple files would be renamed to '{new_fn}' (from {', '.join(potential_conflicts[new_fn])}). SKIPPING these renames to prevent conflict."
+            )
             # Mark all involved as skipped for clarity if needed, but for now, just don't add them
-        elif new_fp != orig_fp : # Ensure it's actually a rename
-             actual_renames_to_perform.append((orig_fp, new_fp, orig_fn, new_fn))
-             print(f"  - Plan: '{orig_fn}' -> '{new_fn}'")
-
+        elif new_fp != orig_fp:  # Ensure it's actually a rename
+            actual_renames_to_perform.append((orig_fp, new_fp, orig_fn, new_fn))
+            print(f"  - Plan: '{orig_fn}' -> '{new_fn}'")
 
     if not actual_renames_to_perform:
         print("\nNo renames to perform after conflict resolution.")
@@ -130,11 +149,15 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
     try:
         if not auto_confirm:
             try:
-                confirm = input("Are you sure you want to rename these files? (yes/no): ").lower()
+                confirm = input(
+                    "Are you sure you want to rename these files? (yes/no): "
+                ).lower()
             except EOFError:
-                print("No input available. Use --yes to skip confirmation in non-interactive mode.")
+                print(
+                    "No input available. Use --yes to skip confirmation in non-interactive mode."
+                )
                 return
-            if confirm != 'yes':
+            if confirm != "yes":
                 print("Renaming cancelled by user.")
                 return
         renamed_count = 0
@@ -166,8 +189,10 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
                 print(f"Renamed: '{original_filepath}' -> '{new_filepath}'")
                 renamed_count += 1
             except FileExistsError:
-                 print(f"Error renaming '{original_filepath}': Target '{new_filepath}' already exists (should have been caught by pre-check). Skipping.")
-                 error_count +=1
+                print(
+                    f"Error renaming '{original_filepath}': Target '{new_filepath}' already exists (should have been caught by pre-check). Skipping."
+                )
+                error_count += 1
             except OSError as e:
                 print(f"Error renaming '{original_filepath}': {e}")
                 error_count += 1
@@ -182,15 +207,33 @@ def batch_rename(directory_path, search_pattern, replace_pattern, prefix, suffix
 def main():
     parser = argparse.ArgumentParser(
         description="Batch renames files in a directory.",
-        formatter_class=argparse.RawTextHelpFormatter # To keep example formatting
+        formatter_class=argparse.RawTextHelpFormatter,  # To keep example formatting
     )
     parser.add_argument("directory_path", help="Path to the directory.")
-    parser.add_argument("search_pattern", help="String to search for in filenames. Can be empty if only using prefix/suffix.")
-    parser.add_argument("replace_pattern", help="String to replace the search_pattern with.")
-    parser.add_argument("--prefix", help="Optional. String to add to the beginning of filenames.")
-    parser.add_argument("--suffix", help="Optional. String to add to the end of filenames (before extension).")
-    parser.add_argument("--dry-run", action="store_true", help="Show proposed renames without making changes.")
-    parser.add_argument("--yes", action="store_true", help="Automatically confirm all renames without prompting.")
+    parser.add_argument(
+        "search_pattern",
+        help="String to search for in filenames. Can be empty if only using prefix/suffix.",
+    )
+    parser.add_argument(
+        "replace_pattern", help="String to replace the search_pattern with."
+    )
+    parser.add_argument(
+        "--prefix", help="Optional. String to add to the beginning of filenames."
+    )
+    parser.add_argument(
+        "--suffix",
+        help="Optional. String to add to the end of filenames (before extension).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show proposed renames without making changes.",
+    )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Automatically confirm all renames without prompting.",
+    )
 
     args = parser.parse_args()
 
@@ -201,7 +244,9 @@ def main():
     # It's okay for search_pattern to be empty if prefix or suffix is provided.
     # It's also okay for replace_pattern to be empty.
     if not args.search_pattern and not args.prefix and not args.suffix:
-        print("Error: You must specify a search_pattern, a prefix, or a suffix for the script to do anything.")
+        print(
+            "Error: You must specify a search_pattern, a prefix, or a suffix for the script to do anything."
+        )
         parser.print_help()
         return
 
@@ -212,8 +257,9 @@ def main():
         args.prefix,
         args.suffix,
         args.dry_run,
-        args.yes
+        args.yes,
     )
+
 
 if __name__ == "__main__":
     main()

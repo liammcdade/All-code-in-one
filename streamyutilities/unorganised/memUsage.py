@@ -6,7 +6,8 @@ import argparse
 import sys
 
 DEFAULT_INTERVAL = 1.0  # seconds
-DEFAULT_COUNT = 0       # 0 means run indefinitely
+DEFAULT_COUNT = 0  # 0 means run indefinitely
+
 
 def bytes_to_human_readable(n_bytes):
     """Converts bytes to a human-readable string (KB, MB, GB, TB)."""
@@ -21,6 +22,7 @@ def bytes_to_human_readable(n_bytes):
         i += 1
     return f"{n_bytes:.2f}{size_name[i]}"
 
+
 def display_memory_usage(virtual_mem_stats, swap_mem_stats=None):
     """Displays memory usage information in a readable format."""
     print("--- RAM Usage ---")
@@ -33,33 +35,33 @@ def display_memory_usage(virtual_mem_stats, swap_mem_stats=None):
         print("--- Swap Usage ---")
         print(f"  Total:     {bytes_to_human_readable(swap_mem_stats.total):>10}")
         print(f"  Used:      {bytes_to_human_readable(swap_mem_stats.used):>10}")
-        print(f"  Free:      {bytes_to_human_readable(swap_mem_stats.free):>10}") # psutil uses 'free' for swap
+        print(
+            f"  Free:      {bytes_to_human_readable(swap_mem_stats.free):>10}"
+        )  # psutil uses 'free' for swap
         print(f"  Percent:   {swap_mem_stats.percent:.1f}%")
 
-    print("-" * 30) # Separator
+    print("-" * 30)  # Separator
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Display current system memory (RAM and Swap) utilization.",
-        epilog="Example: python memUsage.py --interval 5 --count 12 --swap"
+        epilog="Example: python memUsage.py --interval 5 --count 12 --swap",
     )
     parser.add_argument(
         "--interval",
         type=float,
         default=DEFAULT_INTERVAL,
-        help=f"Time interval in seconds between updates. Default: {DEFAULT_INTERVAL}s."
+        help=f"Time interval in seconds between updates. Default: {DEFAULT_INTERVAL}s.",
     )
     parser.add_argument(
         "--count",
         type=int,
         default=DEFAULT_COUNT,
-        help="Number of updates to display. Default: 0 (run indefinitely until Ctrl+C)."
+        help="Number of updates to display. Default: 0 (run indefinitely until Ctrl+C).",
     )
     parser.add_argument(
-        "--swap",
-        action="store_true",
-        help="Include swap memory usage in the display."
+        "--swap", action="store_true", help="Include swap memory usage in the display."
     )
 
     args = parser.parse_args()
@@ -71,7 +73,9 @@ if __name__ == "__main__":
         print("Error: Count must be a non-negative number.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Starting memory usage monitoring (Interval: {args.interval}s, Count: {'Infinite' if args.count == 0 else args.count}).")
+    print(
+        f"Starting memory usage monitoring (Interval: {args.interval}s, Count: {'Infinite' if args.count == 0 else args.count})."
+    )
     print("Press Ctrl+C to stop.")
 
     updates_done = 0
@@ -83,7 +87,7 @@ if __name__ == "__main__":
 
         while True:
             if args.count != 0 and updates_done >= args.count:
-                break # Reached desired number of updates
+                break  # Reached desired number of updates
 
             vmem = psutil.virtual_memory()
             smem = psutil.swap_memory() if args.swap else None
@@ -99,19 +103,24 @@ if __name__ == "__main__":
             display_memory_usage(vmem, smem)
             updates_done += 1
 
-            if args.count != 0 and updates_done >= args.count: # Check again in case this was the last one
+            if (
+                args.count != 0 and updates_done >= args.count
+            ):  # Check again in case this was the last one
                 break
 
             # Sleep for the specified interval before the next update
             # (unless it was the very last update in a counted loop)
             if args.count == 0 or updates_done < args.count:
-                 time.sleep(args.interval)
+                time.sleep(args.interval)
 
     except KeyboardInterrupt:
         print("\nMonitoring stopped by user (Ctrl+C).")
-    except psutil.Error as e: # Catch psutil specific errors
+    except psutil.Error as e:  # Catch psutil specific errors
         print(f"\nA psutil error occurred: {e}", file=sys.stderr)
-        print("Please ensure psutil is installed correctly and you have necessary permissions.", file=sys.stderr)
+        print(
+            "Please ensure psutil is installed correctly and you have necessary permissions.",
+            file=sys.stderr,
+        )
     except Exception as e:
         print(f"\nAn unexpected error occurred: {e}", file=sys.stderr)
     finally:

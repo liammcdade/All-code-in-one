@@ -14,15 +14,17 @@ import argparse
 import hashlib
 import os
 
+
 def calculate_hash(filepath, block_size=65536):
     """Calculates the SHA256 hash of a file."""
     hasher = hashlib.sha256()
-    with open(filepath, 'rb') as f:
+    with open(filepath, "rb") as f:
         buf = f.read(block_size)
         while len(buf) > 0:
             hasher.update(buf)
             buf = f.read(block_size)
     return hasher.hexdigest()
+
 
 def find_duplicates(directory_path):
     """Finds duplicate files in the given directory."""
@@ -42,10 +44,15 @@ def find_duplicates(directory_path):
                     hashes[file_hash] = filepath
     return duplicates
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Finds and optionally deletes duplicate files.")
+    parser = argparse.ArgumentParser(
+        description="Finds and optionally deletes duplicate files."
+    )
     parser.add_argument("directory_path", help="The directory to scan.")
-    parser.add_argument("--delete", action="store_true", help="Prompt to delete duplicates.")
+    parser.add_argument(
+        "--delete", action="store_true", help="Prompt to delete duplicates."
+    )
 
     args = parser.parse_args()
 
@@ -75,16 +82,22 @@ def main():
             while True:
                 try:
                     # Prompt user to select files to keep
-                    keep_indices_str = input("Enter numbers of files to KEEP (comma-separated, e.g., 1,2), or 'none' to delete all, or 'skip' to keep all: ")
+                    keep_indices_str = input(
+                        "Enter numbers of files to KEEP (comma-separated, e.g., 1,2), or 'none' to delete all, or 'skip' to keep all: "
+                    )
 
-                    if keep_indices_str.lower() == 'skip':
+                    if keep_indices_str.lower() == "skip":
                         print(f"Skipping deletion for this set.")
                         break
 
-                    files_to_delete = list(files) # Assume all are to be deleted initially
+                    files_to_delete = list(
+                        files
+                    )  # Assume all are to be deleted initially
 
-                    if keep_indices_str.lower() != 'none':
-                        keep_indices = [int(i.strip()) -1 for i in keep_indices_str.split(',')]
+                    if keep_indices_str.lower() != "none":
+                        keep_indices = [
+                            int(i.strip()) - 1 for i in keep_indices_str.split(",")
+                        ]
 
                         # Validate input indices
                         if not all(0 <= idx < len(files) for idx in keep_indices):
@@ -93,8 +106,9 @@ def main():
 
                         # Determine files to delete
                         files_to_keep_paths = [files[i] for i in keep_indices]
-                        files_to_delete = [f for f in files if f not in files_to_keep_paths]
-
+                        files_to_delete = [
+                            f for f in files if f not in files_to_keep_paths
+                        ]
 
                     if not files_to_delete:
                         print("No files selected for deletion in this set.")
@@ -105,7 +119,7 @@ def main():
                         print(f"  - {f_del}")
 
                     confirm = input("Confirm deletion? (yes/no): ").lower()
-                    if confirm == 'yes':
+                    if confirm == "yes":
                         for f_del in files_to_delete:
                             try:
                                 os.remove(f_del)
@@ -113,14 +127,16 @@ def main():
                             except OSError as e:
                                 print(f"Error deleting {f_del}: {e}")
                         break
-                    elif confirm == 'no':
+                    elif confirm == "no":
                         print("Deletion cancelled for this set.")
                         break
                     else:
                         print("Invalid input. Please type 'yes' or 'no'.")
 
                 except ValueError:
-                    print("Invalid input. Please enter numbers separated by commas, 'none', or 'skip'.")
+                    print(
+                        "Invalid input. Please enter numbers separated by commas, 'none', or 'skip'."
+                    )
                 except Exception as e:
                     print(f"An unexpected error occurred: {e}")
 

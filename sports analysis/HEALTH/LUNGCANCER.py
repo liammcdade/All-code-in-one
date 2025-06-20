@@ -7,7 +7,9 @@ df = pd.read_csv(r"C:\Users\liam\Pictures\apple its glowtime\iPhone 16\dataset_m
 df = df.drop(columns=["id", "diagnosis_date", "end_treatment_date"], errors="ignore")
 
 # Map cancer_stage to numeric
-df["cancer_stage"] = df["cancer_stage"].map({"Stage I": 1, "Stage II": 2, "Stage III": 3, "Stage IV": 4})
+df["cancer_stage"] = df["cancer_stage"].map(
+    {"Stage I": 1, "Stage II": 2, "Stage III": 3, "Stage IV": 4}
+)
 
 # Split survivors and non-survivors
 survivors, non_survivors = df[df["survived"] == 1], df[df["survived"] == 0]

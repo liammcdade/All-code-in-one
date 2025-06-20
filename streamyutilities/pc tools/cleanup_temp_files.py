@@ -17,7 +17,8 @@ import argparse
 import os
 
 # Define common temporary file extensions and suffixes
-TEMP_PATTERNS = ['.tmp', '.bak', '.swp', '.log', '~']
+TEMP_PATTERNS = [".tmp", ".bak", ".swp", ".log", "~"]
+
 
 def find_temp_files(directory_path):
     """Finds temporary files in the given directory based on TEMP_PATTERNS."""
@@ -26,16 +27,28 @@ def find_temp_files(directory_path):
         for filename in filenames:
             filepath = os.path.join(dirpath, filename)
             # Check by extension or if filename ends with ~
-            if os.path.isfile(filepath) and \
-               (any(filename.lower().endswith(ext) for ext in TEMP_PATTERNS if ext != '~') or \
-                filename.endswith('~')):
+            if os.path.isfile(filepath) and (
+                any(
+                    filename.lower().endswith(ext)
+                    for ext in TEMP_PATTERNS
+                    if ext != "~"
+                )
+                or filename.endswith("~")
+            ):
                 temp_files_found.append(filepath)
     return temp_files_found
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Cleans up temporary files from a directory.")
-    parser.add_argument("directory_path", help="The directory to scan for temporary files.")
-    parser.add_argument("--delete", action="store_true", help="Delete found temporary files.")
+    parser = argparse.ArgumentParser(
+        description="Cleans up temporary files from a directory."
+    )
+    parser.add_argument(
+        "directory_path", help="The directory to scan for temporary files."
+    )
+    parser.add_argument(
+        "--delete", action="store_true", help="Delete found temporary files."
+    )
 
     args = parser.parse_args()
 
@@ -63,8 +76,10 @@ def main():
     if args.delete:
         print("\n-- Delete Mode --")
         try:
-            confirm = input(f"Are you sure you want to delete {len(temp_files)} temporary file(s)? (yes/no): ").lower()
-            if confirm == 'yes':
+            confirm = input(
+                f"Are you sure you want to delete {len(temp_files)} temporary file(s)? (yes/no): "
+            ).lower()
+            if confirm == "yes":
                 deleted_count = 0
                 error_count = 0
                 for f_path in temp_files:
@@ -84,6 +99,7 @@ def main():
             print(f"An error occurred during the deletion process: {e}")
     else:
         print("\nTo delete these files, run the script again with the --delete flag.")
+
 
 if __name__ == "__main__":
     main()
