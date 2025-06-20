@@ -47,7 +47,5 @@ def countdown(target_dt):
 
 if __name__ == "__main__":
   print("--- Countdown Timer ---")
-  target_datetime = get_target_datetime()
-
-  if target_datetime:
+  if target_datetime := get_target_datetime():
     countdown(target_datetime)
