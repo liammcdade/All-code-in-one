@@ -1,6 +1,4 @@
-
-import sys
-from DataNinja.cli import main as cli_main
+from DataNinja.cli import app
 
 if __name__ == "__main__":
     """
@@ -18,5 +16,5 @@ if __name__ == "__main__":
     # by default uses sys.argv[1:] if no args are passed to it.
     # So, calling cli_main() without arguments is correct here, as it will
     # pick up sys.argv internally.
-    cli_main()
+    app()
 

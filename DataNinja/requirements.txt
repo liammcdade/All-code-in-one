@@ -2,3 +2,11 @@ pandas
 openpyxl
 PyYAML
 scikit-learn
+rich
+typer[all]
+plotext
+sqlite3
+# For plugins (ML, geo, SQL):
+scikit-learn
+# For testing
+pytest

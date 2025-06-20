@@ -1,309 +1,837 @@
-
-import argparse
-import sys
-import os
+import typer
 import pandas as pd
+import os
+import sys
+import tempfile
+import pickle
+from pathlib import Path
+from typing import Optional, List
+from rich.console import Console
+from rich.table import Table
+from rich import box
+import plotext as plt
+import numpy as np
 
-
-# Adjust path to import from core and formats, assuming cli.py is in DataNinja/
-# This makes sure that DataNinja can be run as a script (python DataNinja/cli.py)
-# or as a module (python -m DataNinja)
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from DataNinja.core.loader import DataLoader # Abstract, for type hinting or checks
+# Import format handlers
+from DataNinja.formats.csv_handler import CSVHandler
+from DataNinja.formats.json_handler import JSONHandler
+from DataNinja.formats.excel_handler import ExcelHandler
+from DataNinja.formats.sqlite_handler import SQLiteHandler
+from DataNinja.formats.yaml_handler import YAMLHandler
 from DataNinja.core.cleaner import DataCleaner
-from DataNinja.core.analyzer import DataAnalyzer
-from DataNinja.core.transformer import DataTransformer
-from DataNinja.core.plotter import DataPlotter
-from DataNinja.core.utils import setup_logging, load_config
-from DataNinja.formats.csv_handler import CSVHandler # Example concrete loader
-# Add other handlers as they are implemented, e.g.:
-# from DataNinja.formats.json_handler import JSONHandler
-# from DataNinja.formats.excel_handler import ExcelHandler
+from DataNinja.plugins.geo import GeoProcessor
+from DataNinja.plugins.ml import MLModel
+from DataNinja.plugins.sql import SQLProcessor
 
+app = typer.Typer(help="DataNinja: Unified CLI for data manipulation, cleaning, analysis, and visualization.")
+console = Console()
 
-# Setup a logger for the CLI module
-logger = setup_logging(module_name='DataNinjaCLI')
+# Session management: store DataFrame in a temp file between commands
+SESSION_FILE = os.path.join(tempfile.gettempdir(), "dataninja_session.pkl")
 
-def main(args=None):
-    """
-    Main function for the DataNinja CLI.
-    Parses arguments and orchestrates the data processing workflow.
-    """
-    parser = argparse.ArgumentParser(description="DataNinja: A command-line tool for data processing and analysis.")
+def save_session(df):
+    with open(SESSION_FILE, "wb") as f:
+        pickle.dump(df, f)
 
-    # --- General Arguments ---
-    parser.add_argument(
-        "input_file",
-        type=str,
-        help="Path to the input data file."
-    )
-    parser.add_argument(
-        "--output_file",
-        type=str,
-        help="Path to save the processed output data. (Optional)"
-    )
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="config.json",
-        help="Path to a JSON configuration file for operations. (Default: config.json)"
-    )
-    parser.add_argument(
-        "-v", "--verbose",
-        action="count",
-        default=0,
-        help="Increase verbosity (e.g., -v for INFO, -vv for DEBUG)."
-    )
-
-    # --- Sub-commands for different actions (optional, can be complex) ---
-    # For now, let's keep it simple with primary action arguments.
-    # Or, one could use subparsers for 'load', 'clean', 'analyze', 'transform', 'plot' actions.
-
-    # --- Action-specific arguments (examples) ---
-    parser.add_argument(
-        "--load",
-        action="store_true",
-        help="Perform a load operation (default if input_file is given)."
-    )
-    parser.add_argument(
-        "--clean",
-        nargs='*', # 0 or more cleaning operation names or a config key
-        help="Perform cleaning operations. Can be followed by specific ops or use config."
-    )
-    parser.add_argument(
-        "--analyze",
-        nargs='*', # 0 or more analysis names or a config key
-        help="Perform analysis. Can be followed by specific types or use config."
-    )
-    parser.add_argument(
-        "--transform",
-        nargs='*',
-        help="Perform transformations. Can be followed by specific transformations or use config."
-    )
-    parser.add_argument(
-        "--plot",
-        nargs='*', # e.g., --plot histogram:Age scatter:Age:Salary
-        help="Generate plots. Specify plot type and columns, like 'histogram:column_name' or 'scatter:x_col:y_col'."
-    )
-
-    # Parse arguments
-    # If called from __main__.py, sys.argv[1:] will be passed.
-    # If called directly for testing, args can be a list of strings.
-    parsed_args = parser.parse_args(args=args)
-
-    # --- Configure Logging Verbosity ---
-    if parsed_args.verbose == 1:
-        logger.setLevel("INFO")
-        setup_logging(log_level="INFO", module_name='DataNinjaCLI') # Re-setup with new level
-        setup_logging(log_level="INFO", module_name='DataNinjaApp') # Also for general app logger
-    elif parsed_args.verbose >= 2:
-        logger.setLevel("DEBUG")
-        setup_logging(log_level="DEBUG", module_name='DataNinjaCLI')
-        setup_logging(log_level="DEBUG", module_name='DataNinjaApp')
-
-    logger.info("DataNinja CLI started.")
-    logger.debug(f"Parsed arguments: {parsed_args}")
-
-    # --- Load Configuration ---
-    # app_config = load_config(parsed_args.config)
-    # if app_config:
-    #     logger.info(f"Loaded configuration from {parsed_args.config}")
-    # else:
-    #     logger.warning(f"Could not load configuration from {parsed_args.config}. Proceeding with defaults/CLI args.")
-    #     app_config = {} # Default to empty config
-
-    # --- Core Logic ---
-    # For now, just demonstrate loading. A real CLI would build a pipeline.
-
-    data = None
-
-    # 1. Load Data (using CSVHandler as an example)
-    # TODO: Add logic to select loader based on file type or argument
-    if os.path.exists(parsed_args.input_file):
-        logger.info(f"Loading data from: {parsed_args.input_file}")
-        try:
-            # Simple type detection (can be more sophisticated)
-            if parsed_args.input_file.lower().endswith('.csv'):
-                loader = CSVHandler(source=parsed_args.input_file)
-                data = loader.load_data()
-                logger.info(f"Data loaded successfully. Shape: {data.shape if hasattr(data, 'shape') else len(data)} rows/elements.")
-                logger.debug(f"Loaded data head:\n{data.head() if hasattr(data, 'head') else data[:5]}")
-            # Add elif for other types like .json, .xlsx here
-            # elif parsed_args.input_file.lower().endswith('.json'):
-            #     loader = JSONHandler(source=parsed_args.input_file) # Assuming JSONHandler exists
-            #     data = loader.load_data()
-            else:
-                logger.error(f"Unsupported file type: {parsed_args.input_file}. Only .csv is currently demonstrated.")
-                sys.exit(1)
-        except FileNotFoundError:
-            logger.error(f"Input file not found: {parsed_args.input_file}")
-            sys.exit(1)
-        except Exception as e:
-            logger.error(f"Error loading data: {e}", exc_info=parsed_args.verbose >=2)
-            sys.exit(1)
+def load_session():
+    if os.path.exists(SESSION_FILE):
+        with open(SESSION_FILE, "rb") as f:
+            return pickle.load(f)
     else:
-        logger.error(f"Input file does not exist: {parsed_args.input_file}")
-        sys.exit(1)
+        return None
 
-    if data is None:
-        logger.error("No data loaded. Exiting.")
-        sys.exit(1)
+def clear_session():
+    if os.path.exists(SESSION_FILE):
+        os.remove(SESSION_FILE)
 
-    # 2. Clean Data (Example)
-    if parsed_args.clean is not None: # Check if --clean was passed
-        logger.info("Cleaning data...")
-        cleaner = DataCleaner(data)
-        # This is a placeholder. Real implementation would parse `parsed_args.clean`
-        # or use a config file to determine cleaning operations.
-        # Example: remove rows where 'Age' is missing, convert 'Value' to int.
-        cleaning_ops_example = [
-            # {'method': 'remove_missing_values', 'params': {'subset': ['Age']}},
-            # {'method': 'convert_column_type', 'params': {'column': 'Value', 'new_type': int}}
-        ]
-        if not cleaning_ops_example: # If no specific ops, maybe a default clean
-            logger.info("No specific cleaning operations defined in CLI demo. Applying DataCleaner's default (if any).")
+def detect_format(filepath):
+    ext = Path(filepath).suffix.lower()
+    if ext in [".csv", ".tsv"]:
+        return "csv"
+    elif ext == ".json":
+        return "json"
+    elif ext in [".xlsx", ".xls"]:
+        return "excel"
+    elif ext in [".sqlite", ".db"]:
+        return "sqlite"
+    elif ext == ".yaml":
+        return "yaml"
+    # elif ext == ".xml":
+    #     return "xml"
+    else:
+        return None
 
-        try:
-            data = cleaner.clean_data(operations=cleaning_ops_example) # or load from config
-            logger.info(f"Data cleaned. Shape: {data.shape if hasattr(data, 'shape') else len(data)}")
-            logger.debug(f"Cleaned data head:\n{data.head() if hasattr(data, 'head') else data[:5]}")
-        except Exception as e:
-            logger.error(f"Error during data cleaning: {e}", exc_info=parsed_args.verbose >=2)
-            # Decide whether to exit or continue with uncleaned/partially cleaned data
-
-    # 3. Analyze Data (Example)
-    if parsed_args.analyze is not None:
-        logger.info("Analyzing data...")
-        analyzer = DataAnalyzer(data)
-        # Placeholder for analysis logic based on `parsed_args.analyze` or config
-        analysis_results = analyzer.analyze_data() # Default analysis
-        logger.info("Analysis complete.")
-        for key, result in analysis_results.items():
-            logger.info(f"--- {key.replace('_', ' ').title()} ---")
-            # print(result) # Or save to a file, log more selectively
-            if isinstance(result, pd.DataFrame):
-                 logger.info(f"\n{result.to_string()}")
-            elif isinstance(result, pd.Series):
-                 logger.info(f"\n{result.to_string()}")
+def load_data(filepath, **kwargs):
+    fmt = detect_format(filepath)
+    if fmt == "csv":
+        return CSVHandler(filepath).load_data(**kwargs)
+    elif fmt == "json":
+        return JSONHandler(filepath).load_data(**kwargs)
+    elif fmt == "excel":
+        return ExcelHandler(filepath).load_data(**kwargs)
+    elif fmt == "sqlite":
+        # For now, load first table
+        handler = SQLiteHandler(filepath)
+        import sqlite3
+        with sqlite3.connect(filepath) as conn:
+            tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn)
+            if not tables.empty:
+                table_name = tables.iloc[0, 0]
+                return handler.load_data(table_name=table_name)
             else:
-                 logger.info(str(result))
+                raise typer.Exit("No tables found in SQLite DB.")
+    elif fmt == "yaml":
+        return YAMLHandler(filepath).load_data(**kwargs)
+    else:
+        raise typer.Exit(f"Unsupported file format: {filepath}")
 
+def save_data(df, filepath):
+    fmt = detect_format(filepath)
+    if fmt == "csv":
+        return CSVHandler(filepath).save_data(df, target_path=filepath)
+    elif fmt == "json":
+        return JSONHandler(filepath).save_data(df, target_path=filepath)
+    elif fmt == "excel":
+        return ExcelHandler(filepath).save_data(df, target_path=filepath)
+    elif fmt == "sqlite":
+        # Save to table named 'data' by default
+        return SQLiteHandler(filepath).save_data(df, table_name="data", if_exists="replace")
+    elif fmt == "yaml":
+        return YAMLHandler(filepath).save_data(df, target_path=filepath)
+    else:
+        raise typer.Exit(f"Unsupported file format for saving: {filepath}")
 
-    # 4. Transform Data (Example)
-    if parsed_args.transform is not None:
-        logger.info("Transforming data...")
-        transformer = DataTransformer(data)
-        # Placeholder for transformation logic
-        transform_ops_example = [
-            # {'method': 'scale_numerical_features', 'params': {'columns': ['Age', 'Salary']}},
-            # {'method': 'encode_categorical_features', 'params': {'columns': ['City']}}
-        ]
-        if not transform_ops_example:
-             logger.info("No specific transformations defined in CLI demo.")
-        try:
-            data = transformer.transform_data(transformations=transform_ops_example)
-            logger.info(f"Data transformed. Shape: {data.shape if hasattr(data, 'shape') else len(data)}")
-            logger.debug(f"Transformed data head:\n{data.head() if hasattr(data, 'head') else data[:5]}")
-        except Exception as e:
-            logger.error(f"Error during data transformation: {e}", exc_info=parsed_args.verbose >=2)
+# --- CLI Commands ---
+@app.command()
+def load(
+    file: str = typer.Argument(..., help="Input data file (csv, json, xlsx, sqlite, yaml)"),
+):
+    """Load a data file and start a session."""
+    df = load_data(file)
+    save_session(df)
+    console.print(f"[bold green]Loaded:[/bold green] {file}")
+    # Show preview
+    head_df = df.head(10)
+    table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
+    for col in head_df.columns:
+        table.add_column(str(col))
+    for _, row in head_df.iterrows():
+        table.add_row(*[str(x) for x in row])
+    console.print(table)
+    console.print(f"[cyan]Shape:[/cyan] {df.shape}, [cyan]Columns:[/cyan] {list(df.columns)}")
 
-    # 5. Plot Data (Example)
-    if parsed_args.plot:
-        logger.info("Generating plots...")
-        plotter = DataPlotter(data)
-        for plot_request in parsed_args.plot:
-            parts = plot_request.split(':')
-            plot_type = parts[0]
-            plot_params = {}
-            if plot_type == 'histogram' and len(parts) > 1:
-                plot_params['column'] = parts[1]
-                if len(parts) > 2: plot_params['bins'] = int(parts[2])
-            elif plot_type == 'scatter' and len(parts) > 2:
-                plot_params['x_column'] = parts[1]
-                plot_params['y_column'] = parts[2]
-                if len(parts) > 3: plot_params['hue'] = parts[3] # Optional hue
-            elif plot_type == 'bar' and len(parts) > 2:
-                plot_params['x_column'] = parts[1]
-                plot_params['y_column'] = parts[2]
-                if len(parts) > 3: plot_params['estimator'] = parts[3]
+@app.command()
+def head(
+    n: int = typer.Option(10, help="Number of rows to show"),
+    output: str = typer.Option("table", help="Output mode: table, csv, json, silent"),
+):
+    """Show the first N rows of the current session."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    dfh = df.head(n)
+    if output == "table":
+        table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
+        for col in dfh.columns:
+            table.add_column(str(col))
+        for _, row in dfh.iterrows():
+            table.add_row(*[str(x) for x in row])
+        console.print(table)
+    elif output == "csv":
+        typer.echo(dfh.to_csv(index=False))
+    elif output == "json":
+        typer.echo(dfh.to_json(orient="records"))
+    elif output == "silent":
+        pass
+    else:
+        console.print(f"[red]Unknown output mode: {output}")
+
+@app.command()
+def info():
+    """Show info about the current session DataFrame, including dtypes, nulls, unique, and field distribution."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    # Show DataFrame info
+    buf = []
+    import io
+    sio = io.StringIO()
+    df.info(buf=sio)
+    sio.seek(0)
+    console.print(sio.read())
+    console.print(f"[cyan]Shape:[/cyan] {df.shape}")
+    console.print(f"[cyan]Columns:[/cyan] {list(df.columns)}")
+    console.print(f"[cyan]Dtypes:[/cyan] {df.dtypes.to_dict()}")
+    # Show nulls and unique counts
+    table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
+    table.add_column("Column")
+    table.add_column("Nulls")
+    table.add_column("Unique")
+    for col in df.columns:
+        table.add_row(str(col), str(df[col].isnull().sum()), str(df[col].nunique()))
+    console.print(table)
+    # Show field distribution for first 3 columns
+    for col in df.columns[:3]:
+        console.print(f"[bold]{col}[/bold] value counts:")
+        vc = df[col].value_counts(dropna=False).head(5)
+        for idx, cnt in vc.items():
+            console.print(f"  {repr(idx)}: {cnt}")
+        if df[col].nunique() > 5:
+            console.print(f"  ... ({df[col].nunique()-5} more)")
+
+@app.command()
+def save(
+    output: str = typer.Argument(..., help="Output file path (csv, json, xlsx, sqlite, yaml)"),
+):
+    """Save the current session DataFrame to a file."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    save_data(df, output)
+    console.print(f"[green]Saved to:[/green] {output}")
+
+@app.command()
+def convert(
+    input: str = typer.Argument(..., help="Input file (csv, json, xlsx, sqlite, yaml)"),
+    output: str = typer.Argument(..., help="Output file (csv, json, xlsx, sqlite, yaml)"),
+):
+    """Convert between supported file formats."""
+    df = load_data(input)
+    save_data(df, output)
+    console.print(f"[green]Converted {input} -> {output}")
+
+@app.command()
+def tail(
+    n: int = typer.Option(10, help="Number of rows to show"),
+    output: str = typer.Option("table", help="Output mode: table, csv, json, silent"),
+):
+    """Show the last N rows of the current session."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    dft = df.tail(n)
+    if output == "table":
+        table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
+        for col in dft.columns:
+            table.add_column(str(col))
+        for _, row in dft.iterrows():
+            table.add_row(*[str(x) for x in row])
+        console.print(table)
+    elif output == "csv":
+        typer.echo(dft.to_csv(index=False))
+    elif output == "json":
+        typer.echo(dft.to_json(orient="records"))
+    elif output == "silent":
+        pass
+    else:
+        console.print(f"[red]Unknown output mode: {output}")
+
+@app.command()
+def describe(
+    output: str = typer.Option("table", help="Output mode: table, csv, json, silent"),
+):
+    """Show summary statistics of the current session."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    desc = df.describe(include='all').fillna("")
+    if output == "table":
+        table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
+        table.add_column("stat")
+        for col in desc.columns:
+            table.add_column(str(col))
+        for idx, row in desc.iterrows():
+            table.add_row(str(idx), *[str(x) for x in row])
+        console.print(table)
+    elif output == "csv":
+        typer.echo(desc.to_csv())
+    elif output == "json":
+        typer.echo(desc.to_json())
+    elif output == "silent":
+        pass
+    else:
+        console.print(f"[red]Unknown output mode: {output}")
+
+@app.command()
+def schema():
+    """Show schema (column names, types, null counts, unique counts) of the current session."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    table = Table(show_header=True, header_style="bold magenta", box=box.SIMPLE)
+    table.add_column("Column")
+    table.add_column("Type")
+    table.add_column("Nulls")
+    table.add_column("Unique")
+    for col in df.columns:
+        table.add_row(
+            str(col),
+            str(df[col].dtype),
+            str(df[col].isnull().sum()),
+            str(df[col].nunique())
+        )
+    console.print(table)
+
+@app.command()
+def summary():
+    """Show field distribution summaries and basic outlier detection."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    for col in df.columns:
+        console.print(f"[bold]{col}[/bold] (type: {df[col].dtype})")
+        if pd.api.types.is_numeric_dtype(df[col]):
+            vals = df[col].dropna()
+            if not vals.empty:
+                q1 = vals.quantile(0.25)
+                q3 = vals.quantile(0.75)
+                iqr = q3 - q1
+                lower = q1 - 1.5 * iqr
+                upper = q3 + 1.5 * iqr
+                outliers = vals[(vals < lower) | (vals > upper)]
+                console.print(f"  min: {vals.min()}, max: {vals.max()}, mean: {vals.mean():.2f}, std: {vals.std():.2f}, median: {vals.median()} (outliers: {len(outliers)})")
             else:
-                logger.warning(f"Plot request '{plot_request}' format not recognized or insufficient params. Skipping.")
-                continue
+                console.print("  No numeric data.")
+        else:
+            vc = df[col].value_counts(dropna=False)
+            top = vc.head(5)
+            for idx, cnt in top.items():
+                console.print(f"  {repr(idx)}: {cnt}")
+            if len(vc) > 5:
+                console.print(f"  ... ({len(vc)-5} more)")
+        console.print("")
 
-            # Default save path for plots from CLI
-            # plot_params['save_path'] = f"{plot_type}_{'_'.join(parts[1:])}.png"
-            # For demonstration, let DataPlotter handle show/save via its own defaults or specific save_path in plot_params
+@app.command()
+def dropna(
+    axis: str = typer.Option("rows", help="Drop missing data from 'rows' or 'columns'"),
+    subset: Optional[str] = typer.Option(None, help="Comma-separated columns to consider for NA"),
+    how: str = typer.Option("any", help="'any' or 'all' NAs to drop"),
+):
+    """Drop rows or columns with missing data."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    axis_num = 0 if axis == "rows" else 1
+    subset_cols = [c.strip() for c in subset.split(",")] if subset else None
+    df2 = df.dropna(axis=axis_num, how=how, subset=subset_cols)
+    save_session(df2)
+    console.print(f"[green]Dropped NA from {axis} (how={how}, subset={subset_cols})")
+    head(n=10)
 
-            # Example: ensure a save path if not provided by user through a more complex mechanism
-            if 'save_path' not in plot_params:
-                base_filename = "_".join(filter(None, [plot_params.get('column'), plot_params.get('x_column'), plot_params.get('y_column')]))
-                plot_params['save_path'] = f"{plot_type}_{base_filename if base_filename else 'plot'}.png"
+@app.command()
+def fillna(
+    value: Optional[str] = typer.Option(None, help="Value to fill NA with (or 'mean', 'median', 'mode')"),
+    columns: Optional[str] = typer.Option(None, help="Comma-separated columns to fill"),
+):
+    """Fill missing values."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    cols = [c.strip() for c in columns.split(",")] if columns else df.columns
+    df2 = df.copy()
+    for col in cols:
+        if value == "mean" and pd.api.types.is_numeric_dtype(df2[col]):
+            df2[col] = df2[col].fillna(df2[col].mean())
+        elif value == "median" and pd.api.types.is_numeric_dtype(df2[col]):
+            df2[col] = df2[col].fillna(df2[col].median())
+        elif value == "mode":
+            mode_val = df2[col].mode().iloc[0] if not df2[col].mode().empty else None
+            df2[col] = df2[col].fillna(mode_val)
+        else:
+            df2[col] = df2[col].fillna(value)
+    save_session(df2)
+    console.print(f"[green]Filled NA in columns {cols} with '{value}'")
+    head(n=10)
 
-            plotter.create_plot(plot_type, **plot_params)
-        logger.info("Plot generation process completed.")
+@app.command()
+def dedup(
+    subset: Optional[str] = typer.Option(None, help="Comma-separated columns to consider for duplicates"),
+    keep: str = typer.Option("first", help="Which duplicates to keep: 'first', 'last', or 'none'"),
+):
+    """Remove duplicate rows."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    subset_cols = [c.strip() for c in subset.split(",")] if subset else None
+    keep_val = False if keep == "none" else keep
+    df2 = df.drop_duplicates(subset=subset_cols, keep=keep_val)
+    save_session(df2)
+    console.print(f"[green]Removed duplicates (subset={subset_cols}, keep={keep})")
+    head(n=10)
 
+@app.command()
+def filter(
+    where: str = typer.Argument(..., help="Filter condition, e.g. 'age > 30 and country == \"UK\"'"),
+):
+    """Filter rows by condition (pandas query syntax)."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    try:
+        df2 = df.query(where)
+    except Exception as e:
+        console.print(f"[red]Query error: {e}")
+        raise typer.Exit()
+    save_session(df2)
+    console.print(f"[green]Filtered rows where: {where}")
+    head(n=10)
 
-    # 6. Save Output (if specified)
-    if parsed_args.output_file:
-        logger.info(f"Saving processed data to: {parsed_args.output_file}")
+@app.command()
+def select(
+    columns: str = typer.Argument(..., help="Comma-separated columns to select, e.g. 'name,age'"),
+):
+    """Select columns."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    cols = [c.strip() for c in columns.split(",")]
+    df2 = df[cols]
+    save_session(df2)
+    console.print(f"[green]Selected columns: {cols}")
+    head(n=10)
+
+@app.command()
+def rename(
+    mapping: str = typer.Argument(..., help="Rename columns, e.g. 'old1:new1,old2:new2'"),
+):
+    """Rename columns."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    pairs = [m.split(":") for m in mapping.split(",")]
+    rename_dict = {old: new for old, new in pairs}
+    df2 = df.rename(columns=rename_dict)
+    save_session(df2)
+    console.print(f"[green]Renamed columns: {rename_dict}")
+    head(n=10)
+
+@app.command()
+def cast(
+    mapping: str = typer.Argument(..., help="Cast columns, e.g. 'age:int,salary:float'"),
+):
+    """Change column types."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    pairs = [m.split(":") for m in mapping.split(",")]
+    cast_dict = {col: typ for col, typ in pairs}
+    df2 = df.copy()
+    for col, typ in cast_dict.items():
         try:
-            if isinstance(data, pd.DataFrame):
-                # TODO: Select saver based on output file type
-                if parsed_args.output_file.lower().endswith('.csv'):
-                    data.to_csv(parsed_args.output_file, index=False)
-                    logger.info("Data saved as CSV.")
-                # Add elif for other types like .json, .xlsx here
-                else:
-                    logger.warning(f"Unsupported output file type: {parsed_args.output_file}. Saving as CSV by default.")
-                    data.to_csv(parsed_args.output_file, index=False)
-            else:
-                # Handle saving other data types (e.g. list of lists, dicts from analysis)
-                with open(parsed_args.output_file, 'w') as f:
-                    import json
-                    try:
-                        json.dump(data, f, indent=2) # Assuming JSON serializable if not DataFrame
-                        logger.info("Data saved as JSON.")
-                    except TypeError:
-                        f.write(str(data))
-                        logger.info("Data saved as plain text (was not directly JSON serializable).")
-            logger.info(f"Output successfully saved to {parsed_args.output_file}")
+            df2[col] = df2[col].astype(typ)
         except Exception as e:
-            logger.error(f"Error saving output data: {e}", exc_info=parsed_args.verbose >=2)
+            console.print(f"[red]Cast error for {col}: {e}")
+    save_session(df2)
+    console.print(f"[green]Casted columns: {cast_dict}")
+    head(n=10)
 
-    logger.info("DataNinja CLI finished.")
+@app.command()
+def recode(
+    column: str = typer.Argument(..., help="Column to recode"),
+    mapping: str = typer.Argument(..., help="Recode mapping, e.g. 'old1:new1,old2:new2'"),
+):
+    """Recode values in a column."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    pairs = [m.split(":") for m in mapping.split(",")]
+    recode_dict = {old: new for old, new in pairs}
+    df2 = df.copy()
+    df2[column] = df2[column].replace(recode_dict)
+    save_session(df2)
+    console.print(f"[green]Recoded column {column}: {recode_dict}")
+    head(n=10)
 
+@app.command()
+def normalize(
+    columns: str = typer.Argument(..., help="Comma-separated columns to normalize (min-max)"),
+):
+    """Normalize columns to 0-1 range."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    cols = [c.strip() for c in columns.split(",")]
+    df2 = df.copy()
+    for col in cols:
+        minv = df2[col].min()
+        maxv = df2[col].max()
+        df2[col] = (df2[col] - minv) / (maxv - minv)
+    save_session(df2)
+    console.print(f"[green]Normalized columns: {cols}")
+    head(n=10)
+
+@app.command()
+def trim(
+    columns: str = typer.Argument(..., help="Comma-separated columns to trim whitespace"),
+):
+    """Trim whitespace from string columns."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    cols = [c.strip() for c in columns.split(",")]
+    df2 = df.copy()
+    for col in cols:
+        df2[col] = df2[col].astype(str).str.strip()
+    save_session(df2)
+    console.print(f"[green]Trimmed whitespace in columns: {cols}")
+    head(n=10)
+
+@app.command()
+def lowercase(
+    columns: str = typer.Argument(..., help="Comma-separated columns to lowercase"),
+):
+    """Convert string columns to lowercase."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    cols = [c.strip() for c in columns.split(",")]
+    df2 = df.copy()
+    for col in cols:
+        df2[col] = df2[col].astype(str).str.lower()
+    save_session(df2)
+    console.print(f"[green]Lowercased columns: {cols}")
+    head(n=10)
+
+@app.command()
+def groupby(
+    by: str = typer.Argument(..., help="Comma-separated columns to group by"),
+    agg: str = typer.Argument(..., help="Aggregation, e.g. 'sum', 'mean', 'count', or col:agg,col2:agg2"),
+):
+    """Group data and aggregate."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    by_cols = [c.strip() for c in by.split(",")]
+    if ":" in agg:
+        agg_dict = {k: v for k, v in (a.split(":") for a in agg.split(","))}
+    else:
+        agg_dict = agg
+    df2 = df.groupby(by_cols).agg(agg_dict).reset_index()
+    save_session(df2)
+    console.print(f"[green]Grouped by {by_cols} with aggregation {agg_dict}")
+    head(n=10)
+
+@app.command()
+def aggregate(
+    agg: str = typer.Argument(..., help="Aggregation, e.g. 'sum', 'mean', 'count', or col:agg,col2:agg2"),
+):
+    """Aggregate data (no groupby)."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    if ":" in agg:
+        agg_dict = {k: v for k, v in (a.split(":") for a in agg.split(","))}
+    else:
+        agg_dict = agg
+    df2 = df.agg(agg_dict)
+    console.print(df2)
+
+@app.command()
+def pivot(
+    index: str = typer.Argument(..., help="Index column(s) (comma-separated)"),
+    columns: str = typer.Argument(..., help="Columns to pivot (comma-separated)"),
+    values: str = typer.Argument(..., help="Values column(s) (comma-separated)"),
+):
+    """Pivot table."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    idx = [c.strip() for c in index.split(",")]
+    cols = [c.strip() for c in columns.split(",")]
+    vals = [c.strip() for c in values.split(",")]
+    df2 = df.pivot_table(index=idx, columns=cols, values=vals, aggfunc="mean").reset_index()
+    save_session(df2)
+    console.print(f"[green]Pivoted table (index={idx}, columns={cols}, values={vals})")
+    head(n=10)
+
+@app.command()
+def splitcol(
+    column: str = typer.Argument(..., help="Column to split"),
+    sep: str = typer.Argument(..., help="Separator or regex"),
+    into: str = typer.Argument(..., help="Comma-separated new column names"),
+):
+    """Split a column into multiple columns."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    new_cols = [c.strip() for c in into.split(",")]
+    splits = df[column].astype(str).str.split(sep, expand=True)
+    splits.columns = new_cols
+    df2 = df.drop(columns=[column]).join(splits)
+    save_session(df2)
+    console.print(f"[green]Split column {column} into {new_cols}")
+    head(n=10)
+
+@app.command()
+def mergecols(
+    columns: str = typer.Argument(..., help="Comma-separated columns to merge"),
+    sep: str = typer.Argument("_", help="Separator for merged values"),
+    new: str = typer.Argument(..., help="Name of new column"),
+):
+    """Merge columns into a single column."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    cols = [c.strip() for c in columns.split(",")]
+    df2 = df.copy()
+    df2[new] = df2[cols].astype(str).agg(sep.join, axis=1)
+    df2 = df2.drop(columns=cols)
+    save_session(df2)
+    console.print(f"[green]Merged columns {cols} into {new}")
+    head(n=10)
+
+@app.command()
+def sort(
+    by: str = typer.Argument(..., help="Comma-separated columns to sort by"),
+    ascending: bool = typer.Option(True, help="Sort ascending (default True)"),
+):
+    """Sort rows by column(s)."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    by_cols = [c.strip() for c in by.split(",")]
+    df2 = df.sort_values(by=by_cols, ascending=ascending)
+    save_session(df2)
+    console.print(f"[green]Sorted by {by_cols} (ascending={ascending})")
+    head(n=10)
+
+@app.command()
+def map(
+    column: str = typer.Argument(..., help="Column to map"),
+    expr: str = typer.Argument(..., help="Python expression, e.g. 'x*2' or 'x.upper()'"),
+):
+    """Apply a mapping expression to a column."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    df2 = df.copy()
+    try:
+        df2[column] = df2[column].apply(lambda x: eval(expr, {"x": x}))
+    except Exception as e:
+        console.print(f"[red]Map error: {e}")
+        raise typer.Exit()
+    save_session(df2)
+    console.print(f"[green]Mapped column {column} with '{expr}'")
+    head(n=10)
+
+@app.command()
+def sample(
+    n: int = typer.Option(5, help="Number of rows to sample"),
+    frac: Optional[float] = typer.Option(None, help="Fraction of rows to sample (overrides n)"),
+    random_state: Optional[int] = typer.Option(None, help="Random seed"),
+):
+    """Sample rows."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    if frac is not None:
+        df2 = df.sample(frac=frac, random_state=random_state)
+    else:
+        df2 = df.sample(n=n, random_state=random_state)
+    save_session(df2)
+    console.print(f"[green]Sampled rows (n={n}, frac={frac})")
+    head(n=10)
+
+@app.command()
+def split(
+    frac: float = typer.Argument(0.8, help="Fraction for training set (rest is test)"),
+    shuffle: bool = typer.Option(True, help="Shuffle before splitting"),
+    random_state: Optional[int] = typer.Option(None, help="Random seed"),
+):
+    """Split into training/test sets."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    df2 = df.sample(frac=1, random_state=random_state) if shuffle else df
+    n_train = int(len(df2) * frac)
+    train = df2.iloc[:n_train]
+    test = df2.iloc[n_train:]
+    # Save both to temp files
+    train_path = os.path.join(tempfile.gettempdir(), "dataninja_train.csv")
+    test_path = os.path.join(tempfile.gettempdir(), "dataninja_test.csv")
+    train.to_csv(train_path, index=False)
+    test.to_csv(test_path, index=False)
+    console.print(f"[green]Split: train ({len(train)}) -> {train_path}, test ({len(test)}) -> {test_path}")
+
+@app.command()
+def plot(
+    kind: str = typer.Argument(..., help="Plot type: histogram, bar, line, scatter"),
+    columns: str = typer.Argument(..., help="Column(s) to plot (comma-separated, e.g. 'age' or 'age,salary')"),
+    bins: int = typer.Option(10, help="Number of bins for histogram"),
+    width: int = typer.Option(80, help="Plot width in characters"),
+    height: int = typer.Option(20, help="Plot height in characters"),
+    show: bool = typer.Option(True, help="Show plot in terminal (default True)"),
+    save: Optional[str] = typer.Option(None, help="Save plot to file (txt or png)"),
+):
+    """Plot data (histogram, bar, line, scatter) in ASCII in the terminal."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    cols = [c.strip() for c in columns.split(",")]
+    plt.clf()
+    plt.plotsize(width, height)
+    if kind == "histogram":
+        col = cols[0]
+        plt.hist(df[col].dropna(), bins=bins, label=col)
+        plt.title(f"Histogram of {col}")
+    elif kind == "bar":
+        x, y = cols[0], cols[1] if len(cols) > 1 else None
+        if y:
+            plt.bar(df[x].astype(str), df[y], label=f"{y} by {x}")
+            plt.title(f"Bar plot: {y} by {x}")
+        else:
+            vc = df[x].value_counts()
+            plt.bar(vc.index.astype(str), vc.values, label=x)
+            plt.title(f"Bar plot: {x}")
+    elif kind == "line":
+        x, y = cols[0], cols[1] if len(cols) > 1 else None
+        if y:
+            plt.plot(df[x], df[y], label=f"{y} vs {x}")
+            plt.title(f"Line plot: {y} vs {x}")
+        else:
+            plt.plot(df[x], label=x)
+            plt.title(f"Line plot: {x}")
+    elif kind == "scatter":
+        x, y = cols[0], cols[1]
+        plt.scatter(df[x], df[y], label=f"{y} vs {x}")
+        plt.title(f"Scatter plot: {y} vs {x}")
+    else:
+        console.print(f"[red]Unknown plot kind: {kind}")
+        raise typer.Exit()
+    plt.legend(True)
+    if save:
+        plt.savefig(save)
+        console.print(f"[green]Plot saved to {save}")
+    if show:
+        plt.show()
+
+@app.command()
+def sql(
+    query: str = typer.Argument(..., help="SQL query to run on the current data (use 'data' as the table name)"),
+):
+    """Run SQL queries on the data (use 'data' as the table name)."""
+    df = load_session()
+    if df is None:
+        console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+        raise typer.Exit()
+    try:
+        import pandasql
+    except ImportError:
+        console.print("[red]pandasql is required for SQL queries. Install with 'pip install pandasql'.")
+        raise typer.Exit()
+    pysqldf = lambda q: pandasql.sqldf(q, {"data": df})
+    try:
+        result = pysqldf(query)
+    except Exception as e:
+        console.print(f"[red]SQL error: {e}")
+        raise typer.Exit()
+    save_session(result)
+    console.print(f"[green]SQL query executed. Result:")
+    head(n=10)
+
+@app.command()
+def ml(
+    action: str = typer.Argument(..., help="Action: train or predict"),
+    target: Optional[str] = typer.Option(None, help="Target column for training"),
+    model: Optional[str] = typer.Option(None, help="Model file to save/load"),
+    features: Optional[str] = typer.Option(None, help="Comma-separated feature columns (default: all except target)"),
+    input: Optional[str] = typer.Option(None, help="Input file for prediction (if not using session)"),
+):
+    """Machine learning: train or predict (LogisticRegression, RandomForest)."""
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
+    import pickle
+    if action == "train":
+        df = load_session()
+        if df is None:
+            console.print("[red]No data loaded. Use 'dataninja load <file>' first.")
+            raise typer.Exit()
+        if not target:
+            console.print("[red]Specify --target for training.")
+            raise typer.Exit()
+        X = df.drop(columns=[target]) if not features else df[[c.strip() for c in features.split(",")]]
+        y = df[target]
+        model_obj = RandomForestClassifier() if model and model.endswith(".rf.pkl") else LogisticRegression()
+        model_obj.fit(X, y)
+        model_path = model or "dataninja_model.pkl"
+        with open(model_path, "wb") as f:
+            pickle.dump(model_obj, f)
+        console.print(f"[green]Model trained and saved to {model_path}")
+    elif action == "predict":
+        model_path = model or "dataninja_model.pkl"
+        with open(model_path, "rb") as f:
+            model_obj = pickle.load(f)
+        if input:
+            df = load_data(input)
+        else:
+            df = load_session()
+        X = df if not features else df[[c.strip() for c in features.split(",")]]
+        preds = model_obj.predict(X)
+        df2 = df.copy()
+        df2["prediction"] = preds
+        save_session(df2)
+        console.print(f"[green]Predictions added to session DataFrame.")
+        head(n=10)
+    else:
+        console.print("[red]Unknown ML action. Use 'train' or 'predict'.")
+        raise typer.Exit()
+
+@app.command()
+def geo(
+    action: str = typer.Argument(..., help="Action: geocode or distance"),
+    address: Optional[str] = typer.Option(None, help="Address to geocode (for geocode action)"),
+    lat1: Optional[float] = typer.Option(None, help="Latitude 1 (for distance)"),
+    lon1: Optional[float] = typer.Option(None, help="Longitude 1 (for distance)"),
+    lat2: Optional[float] = typer.Option(None, help="Latitude 2 (for distance)"),
+    lon2: Optional[float] = typer.Option(None, help="Longitude 2 (for distance)"),
+    unit: str = typer.Option("km", help="Unit for distance: km or miles"),
+):
+    """Geolocation/geo-cleaning: geocode address or calculate distance."""
+    geo = GeoProcessor()
+    if action == "geocode":
+        if not address:
+            console.print("[red]Specify --address for geocoding.")
+            raise typer.Exit()
+        result = geo.geocode_address(address)
+        console.print(result)
+    elif action == "distance":
+        if None in (lat1, lon1, lat2, lon2):
+            console.print("[red]Specify --lat1, --lon1, --lat2, --lon2 for distance.")
+            raise typer.Exit()
+        dist = geo.calculate_distance(lat1, lon1, lat2, lon2, unit=unit)
+        console.print(f"[green]Distance: {dist:.2f} {unit}")
+    else:
+        console.print("[red]Unknown geo action. Use 'geocode' or 'distance'.")
+        raise typer.Exit()
 
 if __name__ == "__main__":
-    # This allows running cli.py directly for testing
-    # Example: python DataNinja/cli.py sample.csv --clean --analyze --plot histogram:Age -vv
-    # Create a dummy sample.csv for testing
-    if not os.path.exists("sample.csv"):
-        dummy_df = pd.DataFrame({
-            'ID': range(1, 6),
-            'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eve'],
-            'Age': [28, 35, 22, None, 30],
-            'Salary': [70000, 80000, 55000, 120000, 75000],
-            'City': ['New York', 'Los Angeles', 'Chicago', 'New York', 'Chicago']
-        })
-        dummy_df.to_csv("sample.csv", index=False)
-        print("Created dummy sample.csv for CLI testing.")
-
-    # Example command line arguments for direct script execution:
-    # test_args = ["sample.csv", "--load", "--clean", "--analyze", "--plot", "histogram:Age:10", "scatter:Age:Salary", "-vv", "--output_file", "processed_sample.csv"]
-    # main(test_args)
-
-    # If running the script directly without arguments, argparse will use sys.argv[1:]
-    # which would be empty if you just run `python DataNinja/cli.py`
-    # For a more interactive test, you might want to prompt or define default test_args here.
-    if len(sys.argv) == 1: # No arguments provided to script
-        print("No input file provided. Running with default test arguments for 'sample.csv'.")
-        print("Usage: python DataNinja/cli.py <input_file> [options]")
-        test_args = ["sample.csv", "--clean", "--analyze",
-                     "--plot", "histogram:Age", "scatter:Age:Salary:City", "bar:City:Salary",
-                     "--output_file", "cli_output.csv", "-vv"]
-        print(f"Running with: {' '.join(['python DataNinja/cli.py'] + test_args)}")
-        main(test_args)
-    else:
-        main() # Uses sys.argv[1:] by default
+    app()
 
