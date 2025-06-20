@@ -89,11 +89,7 @@ def search_in_file(filepath, pattern, is_regex, ignore_case, line_numbers, files
 
         # Compile regex pattern once
         try:
-            if not is_regex:
-                # Escape special characters if it's a plain string search
-                pattern_re = re.escape(pattern)
-            else:
-                pattern_re = pattern
+            pattern_re = re.escape(pattern) if not is_regex else pattern
             compiled_pattern = re.compile(pattern_re, flags)
         except re.error as e:
             print(f"Error: Invalid regular expression '{pattern}': {e}")
