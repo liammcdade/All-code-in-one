@@ -1,7 +1,9 @@
-```python
+
 import argparse
 import sys
 import os
+import pandas as pd
+
 
 # Adjust path to import from core and formats, assuming cli.py is in DataNinja/
 # This makes sure that DataNinja can be run as a script (python DataNinja/cli.py)
@@ -304,4 +306,4 @@ if __name__ == "__main__":
         main(test_args)
     else:
         main() # Uses sys.argv[1:] by default
-```
+
