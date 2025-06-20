@@ -605,9 +605,9 @@ def main():
         teams.add(away)
     teams = sorted(teams)
     # Generate and print league table
-#     league_table = generate_league_table_from_predictions(
-        fixtures_to_predict, odds_dict, teams
-    )
+    # league_table = generate_league_table_from_predictions(
+    #     fixtures_to_predict, odds_dict, teams
+    # )
 
     # Generate and print league table with xGF/xGA
     league_table_xg = generate_league_table_with_xg(

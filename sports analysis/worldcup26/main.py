@@ -3,6 +3,7 @@ import math
 from collections import defaultdict
 from tqdm.auto import tqdm  # <-- Add tqdm for progress bars
 import argparse
+from typing import List, Tuple
 
 # FIFA_RANKINGS updated as of April 3, 2025, based on publicly available data.
 FIFA_RANKINGS = {
