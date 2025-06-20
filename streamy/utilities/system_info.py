@@ -15,10 +15,7 @@ import time # For psutil.cpu_percent interval
 def bytes_to_human_readable(n_bytes):
     """Converts bytes to a human-readable string (KB, MB, GB, TB)."""
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10 # 2^10, 2^20, etc.
-
+    prefix = {s: 1 << (i + 1) * 10 for i, s in enumerate(symbols)}
     for s in reversed(symbols):
         if n_bytes >= prefix[s]:
             value = float(n_bytes) / prefix[s]
