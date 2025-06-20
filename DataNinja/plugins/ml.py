@@ -1,200 +1,244 @@
 import logging
-import numpy as np # For dummy data and predictions
-
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score
 # from ..core.utils import setup_logging # If a centralized logging setup is used
 
 # Basic module-level logger configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 class MLModel:
-    def __init__(self, model_type='placeholder', params=None):
+    def __init__(self, model_type: str = 'logistic_regression', params: dict = None):
         """
         Initializes the MLModel.
 
         Args:
-            model_type (str, optional): Type of the model. Defaults to 'placeholder'.
-            params (dict, optional): Parameters for the model. Defaults to None.
+            model_type (str, optional): Type of the model. Defaults to 'logistic_regression'.
+                                        Currently only 'logistic_regression' is supported.
+            params (dict, optional): Parameters for the model constructor. Defaults to None.
         """
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.model_type = model_type
         self.params = params if params is not None else {}
-        self.model = None  # This would hold the actual scikit-learn model instance
+        self.model = None
+
+        if self.model_type == 'logistic_regression':
+            self.model = LogisticRegression(**self.params)
+            self.logger.info(
+                f"LogisticRegression model initialized with params: {self.params}"
+            )
+        else:
+            self.logger.warning(
+                f"Model type '{self.model_type}' is not explicitly supported. "
+                f"No model instance created during initialization."
+            )
+            # Optionally raise an error or default to a generic model
+            # raise ValueError(f"Unsupported model_type: {self.model_type}")
 
         self.logger.info(
-            f"MLModel initialized. Type: '{self.model_type}', Params: {self.params}"
+            f"MLModel setup complete. Model instance: {self.model}"
         )
 
-    def train(self, X, y):
+    def train(self, X: np.ndarray, y: np.ndarray) -> None:
         """
-        Placeholder for model training.
+        Trains the model using the provided features (X) and target (y).
 
         Args:
-            X: Features for training (e.g., pd.DataFrame, np.ndarray).
-            y: Target variable for training.
+            X (np.ndarray): Features for training.
+            y (np.ndarray): Target variable for training.
         """
         self.logger.info(f"Attempting to train model of type '{self.model_type}'.")
 
-        if X is None or y is None:
-            self.logger.error("Training data (X or y) cannot be None.")
-            raise ValueError("Training data (X and y) must be provided.")
+        if not isinstance(X, np.ndarray) or not isinstance(y, np.ndarray):
+            self.logger.warning(
+                f"Expected X and y to be numpy arrays. Got {type(X)} and {type(y)}. "
+                "Scikit-learn might handle this, but explicit conversion is safer."
+            )
 
-        # Basic logging of data characteristics
-        data_info_X = f"type {type(X)}"
-        data_info_y = f"type {type(y)}"
-        if hasattr(X, 'shape'):
-            data_info_X += f", shape {X.shape}"
-        elif hasattr(X, '__len__'):
-            data_info_X += f", length {len(X)}"
-        if hasattr(y, 'shape'):
-            data_info_y += f", shape {y.shape}"
-        elif hasattr(y, '__len__'):
-            data_info_y += f", length {len(y)}"
+        if self.model is None:
+            self.logger.error("Model is not initialized. Cannot train.")
+            raise RuntimeError("Model must be initialized before training. Check model_type.")
 
-        self.logger.info(f"Training with X ({data_info_X}) and y ({data_info_y}).")
+        try:
+            self.logger.info(f"Training with X (shape {X.shape}, dtype {X.dtype}) and y (shape {y.shape}, dtype {y.dtype}).")
+            self.model.fit(X, y)
+            self.logger.info("Model training complete.")
+        except Exception as e:
+            self.logger.error(f"Error during model training: {e}", exc_info=True)
+            raise  # Re-raise the exception after logging
 
-        # Placeholder: actual training logic would go here
-        self.model = f"trained_{self.model_type}_model_with_params_{self.params}"
-        self.logger.info(f"Model training placeholder complete. Model set to: '{self.model}'")
-
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
-        Placeholder for making predictions.
+        Makes predictions using the trained model.
 
         Args:
-            X: New data for prediction.
+            X (np.ndarray): New data for prediction.
 
         Returns:
-            A dummy list of predictions (e.g., list of zeros).
+            np.ndarray: Predicted class labels.
 
         Raises:
-            RuntimeError: If the model has not been trained yet.
-            ValueError: If X is None.
+            RuntimeError: If the model has not been trained or initialized.
+            ValueError: If X is None or not a np.ndarray.
         """
         self.logger.info("Attempting to make predictions.")
 
-        if X is None:
-            self.logger.error("Input data (X) for prediction cannot be None.")
-            raise ValueError("Input data (X) for prediction cannot be None.")
+        if not isinstance(X, np.ndarray):
+            self.logger.error(f"Input data X must be a numpy array. Got {type(X)}.")
+            raise ValueError("Input data X for prediction must be a numpy array.")
 
         if self.model is None:
-            self.logger.error("Model has not been trained yet. Call train() before predict().")
-            raise RuntimeError("Model must be trained before making predictions.")
+            self.logger.error("Model has not been initialized. Cannot predict.")
+            raise RuntimeError("Model must be initialized before making predictions.")
 
-        data_info_X = f"type {type(X)}"
-        if hasattr(X, 'shape'):
-            data_info_X += f", shape {X.shape}"
-        elif hasattr(X, '__len__'):
-            data_info_X += f", length {len(X)}"
-        self.logger.info(f"Predicting on X ({data_info_X}).")
+        # Check if model is trained (sklearn models often have `classes_` or `coef_` attribute after fit)
+        if not hasattr(self.model, 'classes_') and not hasattr(self.model, 'coef_'):
+             self.logger.warning("Model does not appear to be trained yet (missing typical attributes like 'classes_' or 'coef_'). Predictions might be based on initial state or fail.")
+        # It's hard to have a universal "is_trained" check for all sklearn models without calling fit.
+        # For now, we'll rely on the user to call train() first. A more robust check might involve
+        # trying to access an attribute that only exists after fitting, specific to the model type.
 
-        # Placeholder: actual prediction logic would go here
-        num_samples = 0
-        if hasattr(X, 'shape') and len(X.shape) > 0: # Handles numpy arrays, pandas DataFrames
-            num_samples = X.shape[0]
-        elif hasattr(X, '__len__'): # Handles lists
-            num_samples = len(X)
-        else:
-            self.logger.warning("Cannot determine number of samples in X for dummy prediction. Returning single 0.")
-            return [0]
 
-        dummy_predictions = np.zeros(num_samples).tolist() # e.g., [0.0, 0.0, ...]
-        self.logger.warning(
-            f"Model prediction not yet implemented. Returning dummy predictions: {dummy_predictions}"
-        )
-        return dummy_predictions
+        try:
+            self.logger.info(f"Predicting on X (shape {X.shape}, dtype {X.dtype}).")
+            predictions = self.model.predict(X)
+            self.logger.info(f"Predictions generated with shape {predictions.shape}.")
 
-    def evaluate(self, X_test, y_test):
+            if hasattr(self.model, 'predict_proba'):
+                # Log availability, but don't return proba by default from this method
+                # proba_predictions = self.model.predict_proba(X)
+                self.logger.info(f"Probability predictions are also available via model.predict_proba(X). First 5 probas: {self.model.predict_proba(X)[:5]}")
+            return predictions
+        except Exception as e:
+            self.logger.error(f"Error during model prediction: {e}", exc_info=True)
+            raise
+
+    def evaluate(self, X_test: np.ndarray, y_test: np.ndarray, average_method: str = 'binary') -> dict:
         """
-        Placeholder for model evaluation.
+        Evaluates the model using test data.
 
         Args:
-            X_test: Test features.
-            y_test: True labels for test data.
+            X_test (np.ndarray): Test features.
+            y_test (np.ndarray): True labels for test data.
+            average_method (str, optional): Averaging method for precision and recall scores.
+                                          Defaults to 'binary'. Other options: 'micro', 'macro', 'weighted'.
 
         Returns:
-            A dummy dictionary with an accuracy score.
+            dict: A dictionary containing accuracy, precision, and recall scores.
         Raises:
-            ValueError: If X_test or y_test is None.
+            RuntimeError: If the model has not been trained or initialized.
+            ValueError: If X_test or y_test are not numpy arrays or are None.
         """
         self.logger.info("Attempting to evaluate model.")
 
-        if X_test is None or y_test is None:
-            self.logger.error("Test data (X_test or y_test) cannot be None for evaluation.")
-            raise ValueError("Test data (X_test and y_test) must be provided for evaluation.")
+        if not isinstance(X_test, np.ndarray) or not isinstance(y_test, np.ndarray):
+            self.logger.error(f"X_test and y_test must be numpy arrays. Got {type(X_test)} and {type(y_test)}.")
+            raise ValueError("X_test and y_test must be numpy arrays for evaluation.")
 
-        data_info_X = f"type {type(X_test)}"
-        if hasattr(X_test, 'shape'): data_info_X += f", shape {X_test.shape}"
-        data_info_y = f"type {type(y_test)}"
-        if hasattr(y_test, 'shape'): data_info_y += f", shape {y_test.shape}"
+        if self.model is None:
+            self.logger.error("Model has not been initialized. Cannot evaluate.")
+            raise RuntimeError("Model must be initialized before evaluation.")
 
-        self.logger.info(f"Evaluating with X_test ({data_info_X}) and y_test ({data_info_y}).")
+        # Similar check as in predict for trained status
+        if not hasattr(self.model, 'classes_') and not hasattr(self.model, 'coef_'):
+             self.logger.warning("Model does not appear to be trained yet. Evaluation might be based on initial state or fail.")
 
-        # Placeholder: actual evaluation logic
-        dummy_score = {'accuracy': 0.5, 'precision': 0.5, 'recall': 0.5} # Example metrics
-        self.logger.warning(
-            f"Model evaluation not yet implemented. Returning dummy score: {dummy_score}"
-        )
-        return dummy_score
+
+        try:
+            self.logger.info(f"Evaluating with X_test (shape {X_test.shape}) and y_test (shape {y_test.shape}).")
+            y_pred = self.model.predict(X_test)
+
+            accuracy = accuracy_score(y_test, y_pred)
+            # For binary classification, common practice. For multiclass, 'weighted' or 'macro' might be better.
+            precision = precision_score(y_test, y_pred, average=average_method, zero_division=0)
+            recall = recall_score(y_test, y_pred, average=average_method, zero_division=0)
+
+            scores = {'accuracy': accuracy, 'precision': precision, 'recall': recall}
+            self.logger.info(f"Evaluation scores ({average_method} averaging): {scores}")
+            return scores
+        except Exception as e:
+            self.logger.error(f"Error during model evaluation: {e}", exc_info=True)
+            raise
 
 if __name__ == '__main__':
     main_exec_logger = logging.getLogger(__name__)
-    if not main_exec_logger.handlers or not logging.getLogger().handlers:
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', force=True)
+    # Ensure logger is configured for script execution
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - [%(levelname)s] - %(name)s - %(message)s', force=True)
     main_exec_logger.setLevel(logging.DEBUG)
 
     main_exec_logger.info("--- MLModel Example Usage ---")
 
-    # Instantiate model
-    model = MLModel(model_type='my_classifier', params={'C': 1.0, 'kernel': 'linear'})
+    # Instantiate model - Logistic Regression
+    # Parameters for LogisticRegression can be passed here
+    model_params = {'solver': 'liblinear', 'random_state': 42, 'C': 1.0}
+    ml_model = MLModel(model_type='logistic_regression', params=model_params)
+    main_exec_logger.info(f"Initialized MLModel with type: {ml_model.model_type}, underlying model: {ml_model.model}")
 
-    # Create dummy data
-    # Using NumPy arrays for more realistic ML data representation
-    X_train = np.array([[1, 2], [3, 4], [5, 6], [7,8]])
-    y_train = np.array([0, 0, 1, 1])
-    X_test = np.array([[2, 3], [6, 7]])
-    y_test = np.array([0,1])
+    # Create more realistic dummy data for binary classification
+    main_exec_logger.info("\n--- Generating Sample Data ---")
+    n_samples, n_features = 100, 5
+    X = np.random.rand(n_samples, n_features)  # Features
+    # Create a simple binary target variable y based on some condition
+    # e.g., if sum of first two features > 0.7, then class 1, else 0
+    y = (X[:, 0] + X[:, 1] > 0.7).astype(int)
+    main_exec_logger.info(f"Generated data: X shape {X.shape}, y shape {y.shape}, {np.sum(y)} positive samples")
 
-    main_exec_logger.info(f"Dummy data created: X_train shape {X_train.shape}, y_train shape {y_train.shape}, X_test shape {X_test.shape}, y_test shape {y_test.shape}")
-
-    # Test predict before train
-    main_exec_logger.info("\n--- Testing predict before train (expect RuntimeError) ---")
+    # Split data into train and test sets
     try:
-        model.predict(X_test)
-    except RuntimeError as e:
-        main_exec_logger.info(f"Caught expected RuntimeError: {e}")
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        main_exec_logger.info(f"Data split: X_train {X_train.shape}, X_test {X_test.shape}, y_train {y_train.shape}, y_test {y_test.shape}")
     except Exception as e:
-        main_exec_logger.error(f"Caught unexpected error when predicting before train: {e}", exc_info=True)
+        main_exec_logger.error(f"Error during data splitting: {e}", exc_info=True)
+        # Exit or skip further tests if data splitting fails
+        exit()
+
+    # Test predict before train (should ideally raise an error or warn, depending on sklearn model's default behavior)
+    main_exec_logger.info("\n--- Testing predict before explicit train call ---")
+    try:
+        # LogisticRegression might allow predict before fit if initialized, but predictions would be naive.
+        # Let's see what our wrapper does or if sklearn model throws an error.
+        # Scikit-learn's LogisticRegression will raise NotFittedError if not fit. Our check should catch this.
+        initial_predictions = ml_model.predict(X_test)
+        main_exec_logger.info(f"Predictions before explicit train call (might be naive or error): {initial_predictions[:5]}")
+    except Exception as e: # Catching generic Exception as sklearn might raise NotFittedError
+        main_exec_logger.info(f"Caught expected behavior or error when predicting before train: {type(e).__name__} - {e}")
+
 
     # Train model
     main_exec_logger.info("\n--- Testing train ---")
     try:
-        model.train(X_train, y_train)
-        main_exec_logger.info(f"Model state after training: {model.model}")
+        ml_model.train(X_train, y_train)
+        # Check if the model instance in our class has been fitted (e.g. coef_ attribute exists for LogisticRegression)
+        if hasattr(ml_model.model, 'coef_'):
+            main_exec_logger.info(f"Model training seems successful. Coefs shape: {ml_model.model.coef_.shape}")
+        else:
+            main_exec_logger.warning("Model training finished, but coef_ attribute not found (unexpected for LogisticRegression).")
     except Exception as e:
         main_exec_logger.error(f"Error during model.train: {e}", exc_info=True)
-
+        main_exec_logger.warning("Skipping further tests due to training error.")
+        exit() # Exit if training fails
 
     # Predict
     main_exec_logger.info("\n--- Testing predict ---")
-    if model.model: # Check if model was "trained"
-        try:
-            predictions = model.predict(X_test)
-            main_exec_logger.info(f"Dummy predictions: {predictions}")
-            assert len(predictions) == len(X_test), "Number of predictions should match number of test samples."
-        except Exception as e:
-            main_exec_logger.error(f"Error during model.predict: {e}", exc_info=True)
-    else:
-        main_exec_logger.warning("Skipping predict test as model training failed or was skipped.")
+    try:
+        predictions = ml_model.predict(X_test)
+        main_exec_logger.info(f"Predictions on test set (first 5): {predictions[:5]}")
+        assert len(predictions) == len(X_test), "Number of predictions should match number of test samples."
+    except Exception as e:
+        main_exec_logger.error(f"Error during model.predict: {e}", exc_info=True)
+        main_exec_logger.warning("Skipping evaluation due to prediction error.")
+        exit() # Exit if prediction fails
 
     # Evaluate
     main_exec_logger.info("\n--- Testing evaluate ---")
-    if model.model: # Check if model was "trained"
-        try:
-            score = model.evaluate(X_test, y_test)
-            main_exec_logger.info(f"Dummy evaluation score: {score}")
-        except Exception as e:
-            main_exec_logger.error(f"Error during model.evaluate: {e}", exc_info=True)
-    else:
-        main_exec_logger.warning("Skipping evaluate test as model training failed or was skipped.")
+    try:
+        # For binary classification, 'binary' is fine.
+        # If it were multiclass, one might use 'weighted' or 'macro'.
+        eval_scores = ml_model.evaluate(X_test, y_test, average_method='binary')
+        main_exec_logger.info(f"Evaluation scores: {eval_scores}")
+        assert 'accuracy' in eval_scores and 'precision' in eval_scores and 'recall' in eval_scores
+    except Exception as e:
+        main_exec_logger.error(f"Error during model.evaluate: {e}", exc_info=True)
 
     main_exec_logger.info("\n--- MLModel tests finished ---")
