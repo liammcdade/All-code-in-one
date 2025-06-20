@@ -16,8 +16,8 @@ def flight_time(distance_m):
 
 
 def coriolis_displacement(v, t, lat):
-    # d = omega * v * sin(lat) * t^2
-    return omega * v * np.sin(lat) * t**2  # meters
+    from numpy import sin
+    return omega * v * sin(lat) * t**2
 
 
 kick_distances_yards = np.arange(1, 71)  # 1 to 70 yards

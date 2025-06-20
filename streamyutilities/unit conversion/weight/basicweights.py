@@ -29,6 +29,15 @@ def convert_weight(value, from_unit, to_unit):
     return round(converted_value, 4)
 
 
+def kg_to_lb(kg): return kg * 2.20462
+
+def lb_to_kg(lb): return lb / 2.20462
+
+def g_to_kg(g): return g / 1000
+
+def kg_to_g(kg): return kg * 1000
+
+
 def main():
     print("⚖️ Welcome to the Weight Converter!")
     print("Supported units: kg (kilogram), g (gram), lb (pound), oz (ounce)")

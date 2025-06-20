@@ -7,15 +7,12 @@ from collections import defaultdict
 
 def calculate_md5(filepath, chunk_size=8192):
     """Calculates the MD5 hash of a file."""
-    hash_md5 = hashlib.md5()
     try:
         with open(filepath, "rb") as f:
-            for chunk in iter(lambda: f.read(chunk_size), b""):
-                hash_md5.update(chunk)
+            return hashlib.md5(b"".join(chunk for chunk in iter(lambda: f.read(chunk_size), b""))).hexdigest()
     except IOError:
         # Could log this error if needed
         return None
-    return hash_md5.hexdigest()
 
 def find_duplicate_files(directory):
     """

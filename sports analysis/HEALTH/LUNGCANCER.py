@@ -1,20 +1,16 @@
 import pandas as pd
-import pandas as pd
 
 # Load your dataset (assumes a CSV file named "lung_cancer_data.csv")
 df = pd.read_csv(r"C:\Users\liam\Pictures\apple its glowtime\iPhone 16\dataset_med.csv")
-
 
 # Drop irrelevant columns
 df = df.drop(columns=["id", "diagnosis_date", "end_treatment_date"], errors="ignore")
 
 # Map cancer_stage to numeric
-stage_map = {"Stage I": 1, "Stage II": 2, "Stage III": 3, "Stage IV": 4}
-df["cancer_stage"] = df["cancer_stage"].map(stage_map)
+df["cancer_stage"] = df["cancer_stage"].map({"Stage I": 1, "Stage II": 2, "Stage III": 3, "Stage IV": 4})
 
 # Split survivors and non-survivors
-survivors = df[df["survived"] == 1]
-non_survivors = df[df["survived"] == 0]
+survivors, non_survivors = df[df["survived"] == 1], df[df["survived"] == 0]
 
 # Initialize table
 comparison = []
@@ -34,10 +30,10 @@ categorical_cols = [
 
 for col in categorical_cols:
     if col in df.columns:
-        surv_common = survivors[col].mode(dropna=True)[0]
-        surv_count = survivors[col].value_counts()[surv_common]
-        dead_common = non_survivors[col].mode(dropna=True)[0]
-        dead_count = non_survivors[col].value_counts()[dead_common]
+        surv_common = survivors[col].mode()[0]
+        surv_count = survivors[col].value_counts().iloc[0]
+        dead_common = non_survivors[col].mode()[0]
+        dead_count = non_survivors[col].value_counts().iloc[0]
         comparison.append(
             [col, f"{surv_common} ({surv_count})", f"{dead_common} ({dead_count})"]
         )

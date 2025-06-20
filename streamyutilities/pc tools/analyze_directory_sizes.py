@@ -20,18 +20,7 @@ import argparse
 import os
 
 def bytes_to_human_readable(n_bytes):
-    """Converts bytes to a human-readable string (KB, MB, GB, TB)."""
-    if n_bytes == 0: return "0 B"
-    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10 # 2^10, 2^20, etc.
-
-    for s in reversed(symbols):
-        if n_bytes >= prefix[s]:
-            value = float(n_bytes) / prefix[s]
-            return f"{value:.2f} {s}B"
-    return f"{n_bytes} B"
+    return next((f"{n_bytes / (1 << (i + 1) * 10):.2f} {s}B" for i, s in reversed(list(enumerate(('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')))) if n_bytes >= 1 << (i + 1) * 10), f"{n_bytes} B")
 
 def get_directory_sizes(root_dir, max_depth):
     """

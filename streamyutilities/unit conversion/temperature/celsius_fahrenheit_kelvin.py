@@ -1,70 +1,14 @@
-def celsius_to_fahrenheit(celsius):
-  """Converts Celsius to Fahrenheit.
+def celsius_to_fahrenheit(c): return c * 9/5 + 32
 
-  Args:
-    celsius: Temperature in Celsius.
+def fahrenheit_to_celsius(f): return (f - 32) * 5/9
 
-  Returns:
-    Temperature in Fahrenheit.
-  """
-  return (celsius * 9/5) + 32
+def celsius_to_kelvin(c): return c + 273.15
 
-def fahrenheit_to_celsius(fahrenheit):
-  """Converts Fahrenheit to Celsius.
+def kelvin_to_celsius(k): return k - 273.15
 
-  Args:
-    fahrenheit: Temperature in Fahrenheit.
+def fahrenheit_to_kelvin(f): return celsius_to_kelvin(fahrenheit_to_celsius(f))
 
-  Returns:
-    Temperature in Celsius.
-  """
-  return (fahrenheit - 32) * 5/9
-
-def celsius_to_kelvin(celsius):
-  """Converts Celsius to Kelvin.
-
-  Args:
-    celsius: Temperature in Celsius.
-
-  Returns:
-    Temperature in Kelvin.
-  """
-  return celsius + 273.15
-
-def kelvin_to_celsius(kelvin):
-  """Converts Kelvin to Celsius.
-
-  Args:
-    kelvin: Temperature in Kelvin.
-
-  Returns:
-    Temperature in Celsius.
-  """
-  return kelvin - 273.15
-
-def fahrenheit_to_kelvin(fahrenheit):
-  """Converts Fahrenheit to Kelvin.
-
-  Args:
-    fahrenheit: Temperature in Fahrenheit.
-
-  Returns:
-    Temperature in Kelvin.
-  """
-  celsius = fahrenheit_to_celsius(fahrenheit)
-  return celsius_to_kelvin(celsius)
-
-def kelvin_to_fahrenheit(kelvin):
-  """Converts Kelvin to Fahrenheit.
-
-  Args:
-    kelvin: Temperature in Kelvin.
-
-  Returns:
-    Temperature in Fahrenheit.
-  """
-  celsius = kelvin_to_celsius(kelvin)
-  return celsius_to_fahrenheit(celsius)
+def kelvin_to_fahrenheit(k): return celsius_to_fahrenheit(kelvin_to_celsius(k))
 
 if __name__ == "__main__":
   print("Choose conversion:")

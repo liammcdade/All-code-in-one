@@ -35,6 +35,15 @@ def convert_weight(value, from_unit, to_unit):
     return round(converted_value, 6)
 
 
+def oz_to_g(oz): return oz * 28.3495
+
+def g_to_oz(g): return g / 28.3495
+
+def lb_to_g(lb): return lb * 453.592
+
+def g_to_lb(g): return g / 453.592
+
+
 def main():
     print("⚖️ Welcome to the All-in-One Weight Converter!")
     print("Supported units: kg, g, mg, lb, oz, st, t, ton, µg")

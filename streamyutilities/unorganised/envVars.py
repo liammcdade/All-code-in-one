@@ -10,23 +10,8 @@ def get_env_variables(filter_str=None, case_sensitive=False):
     Retrieves environment variables, optionally filtered.
     Returns a dictionary of matching environment variables.
     """
-    env_vars = {}
-    # os.environ behaves like a dict
-    source_vars = os.environ
-
-    if filter_str:
-        for key, value in source_vars.items():
-            # Check both key and value for the filter string
-            check_key = key if case_sensitive else key.lower()
-            check_value = value if case_sensitive else value.lower()
-            check_filter = filter_str if case_sensitive else filter_str.lower()
-
-            if check_filter in check_key or check_filter in check_value:
-                env_vars[key] = value
-    else:
-        env_vars = dict(source_vars) # Convert os.environ proxy to a real dict
-
-    return env_vars
+    s = os.environ
+    return {k: v for k, v in s.items() if (filter_str or "") in (k if case_sensitive else k.lower()) or (filter_str or "") in (v if case_sensitive else v.lower())} if filter_str else dict(s)
 
 def format_variables(variables_dict, output_format):
     """Formats the variables according to the specified output format."""

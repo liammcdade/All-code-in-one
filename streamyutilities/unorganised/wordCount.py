@@ -33,21 +33,14 @@ def analyze_file_content(filepath, top_n_words=0):
                 # This handles punctuation better than line.split() for word counting.
                 # \w typically includes alphanumeric characters and underscore.
                 # Convert line to lowercase for consistent word counting for frequency.
-                words_in_line = re.findall(r'\b\w+\b', line.lower())
+                words = re.findall(r'\b\w+\b', line.lower())
 
-                for raw_word in words_in_line: # raw_word is already lowercased and mostly clean
-                    stats["words"] += 1
-                    # Basic cleaning for frequency (already lowercase, \b\w+\b handles most)
-                    # No further stripping of punctuation needed if using \b\w+\b
-                    cleaned_word = raw_word
+                stats["words"] += len(words)
+                stats["word_frequencies"].update(words)
+                total_cleaned_word_length += sum(map(len, words))
 
-                    if cleaned_word: # Should always be true with \b\w+\b
-                        stats["word_frequencies"][cleaned_word] += 1
-                        total_cleaned_word_length += len(cleaned_word)
-
-        if stats["words"] > 0:
-            stats["unique_words"] = len(stats["word_frequencies"])
-            stats["avg_word_length"] = total_cleaned_word_length / stats["words"]
+        stats["unique_words"] = len(stats["word_frequencies"])
+        stats["avg_word_length"] = total_cleaned_word_length / stats["words"] if stats["words"] else 0
 
         if top_n_words > 0 and stats["word_frequencies"]:
             stats["top_words_list"] = stats["word_frequencies"].most_common(top_n_words)

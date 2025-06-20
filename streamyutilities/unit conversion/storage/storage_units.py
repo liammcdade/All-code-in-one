@@ -18,18 +18,8 @@ def convert_storage(value, from_unit, to_unit):
   Returns:
     The converted value, or None if units are invalid.
   """
-  from_unit = from_unit.upper()
-  to_unit = to_unit.upper()
-
-  if from_unit not in CONVERSION_FACTORS or to_unit not in CONVERSION_FACTORS:
-    return None
-
-  # Convert the value to Bytes (the base unit)
-  value_in_bytes = value * CONVERSION_FACTORS[from_unit]
-
-  # Convert from Bytes to the target unit
-  converted_value = value_in_bytes / CONVERSION_FACTORS[to_unit]
-  return converted_value
+  from_unit, to_unit = from_unit.upper(), to_unit.upper()
+  return None if from_unit not in CONVERSION_FACTORS or to_unit not in CONVERSION_FACTORS else value * CONVERSION_FACTORS[from_unit] / CONVERSION_FACTORS[to_unit]
 
 if __name__ == "__main__":
   try:

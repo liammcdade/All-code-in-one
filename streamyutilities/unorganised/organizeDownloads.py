@@ -17,33 +17,8 @@ DEFAULT_MAPPINGS = {
 }
 
 def load_mappings(custom_mapping_file):
-    """Loads mappings, starting with defaults and overriding with custom ones."""
-    mappings = DEFAULT_MAPPINGS.copy()
-    if custom_mapping_file:
-        try:
-            with open(custom_mapping_file, 'r') as f:
-                custom_map_data = json.load(f)
-            # Simple merge: custom can add new categories or new extensions to existing ones
-            # More complex merging (e.g. removing default extensions) is not handled here
-            for category, extensions in custom_map_data.items():
-                if category in mappings and isinstance(mappings[category], list) and isinstance(extensions, list):
-                     mappings[category] = list(set(mappings[category] + extensions)) # Merge and deduplicate
-                else:
-                    mappings[category] = extensions
-            print(f"Successfully loaded and merged custom mappings from '{custom_mapping_file}'.")
-        except FileNotFoundError:
-            print(f"Warning: Custom mapping file '{custom_mapping_file}' not found. Using default mappings.")
-        except json.JSONDecodeError:
-            print(f"Warning: Error decoding JSON from '{custom_mapping_file}'. Using default mappings.")
-        except Exception as e:
-            print(f"Warning: Could not load custom mappings from '{custom_mapping_file}' due to: {e}. Using default mappings.")
-
-    # Reverse the mapping for easier lookup: {'.ext': 'Category', ...}
-    extension_to_category = {}
-    for category, extensions in mappings.items():
-        for ext in extensions:
-            extension_to_category[ext.lower()] = category
-    return extension_to_category
+    import json
+    return {**DEFAULT_MAPPINGS, **json.load(open(custom_mapping_file))} if custom_mapping_file else DEFAULT_MAPPINGS.copy()
 
 def organize_downloads(downloads_dir, custom_mapping_file, unknown_action="other", dry_run=False):
     if not os.path.isdir(downloads_dir):
