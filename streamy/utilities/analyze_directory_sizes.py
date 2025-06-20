@@ -183,7 +183,8 @@ def get_directory_sizes(root_dir, max_depth):
     # Add total size of files directly in root_dir, if depth allows (e.g. depth 0 or more)
     if max_depth >= 0:
         files_in_root_size = 0
-        for item in os.listdir(root_dir):
+        root_dir_listing = os.listdir(root_dir)
+        for item in root_dir_listing:
             item_path = os.path.join(root_dir, item)
             if os.path.isfile(item_path) and not os.path.islink(item_path):
                 try:
