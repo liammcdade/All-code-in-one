@@ -1,4 +1,4 @@
-```python
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -247,4 +247,3 @@ if __name__ == '__main__':
     print("\n--- Demonstration Complete ---")
     print("Note: Plots are saved to files. To display them interactively, run in an environment that supports it and remove/comment out 'save_path'.")
 
-```

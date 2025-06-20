@@ -1,4 +1,4 @@
-```python
+
 import sys
 from DataNinja.cli import main as cli_main
 
@@ -19,4 +19,4 @@ if __name__ == "__main__":
     # So, calling cli_main() without arguments is correct here, as it will
     # pick up sys.argv internally.
     cli_main()
-```
+

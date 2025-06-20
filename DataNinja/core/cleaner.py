@@ -1,4 +1,4 @@
-```python
+
 import pandas as pd
 
 class DataCleaner:
@@ -240,4 +240,4 @@ if __name__ == '__main__':
     except TypeError as e:
         print(f"Caught expected error: {e}")
 
-```
+
