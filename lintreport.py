@@ -8,15 +8,20 @@ def run_flake8_on_file(file_path):
         result = subprocess.run(['flake8', file_path], capture_output=True, text=True)
         output = result.stdout.strip()
         return output
-    except Exception as e:
+    except FileNotFoundError:
+        return "Error: flake8 not found. Please install flake8 first."
+    except subprocess.SubprocessError as e:
         return f"Error running flake8: {e}"
 
 def find_python_files(root_dir):
     py_files = []
-    for dirpath, _, filenames in os.walk(root_dir):
-        for filename in filenames:
-            if filename.endswith('.py'):
-                py_files.append(os.path.join(dirpath, filename))
+    try:
+        for dirpath, _, filenames in os.walk(root_dir):
+            for filename in filenames:
+                if filename.endswith('.py'):
+                    py_files.append(os.path.join(dirpath, filename))
+    except PermissionError as e:
+        print(f"Warning: Permission denied accessing some directories: {e}")
     return py_files
 
 def main(root_dir):
@@ -40,6 +45,6 @@ def main(root_dir):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python lint_report.py /path/to/codebase")
+        print("Usage: python lintreport.py /path/to/codebase")
         sys.exit(1)
     main(sys.argv[1])
