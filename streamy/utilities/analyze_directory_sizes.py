@@ -397,8 +397,8 @@ def main():
             print(f"\n(Showing top {args.top} of {len(sorted_items)} items at this depth)")
 
 
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    except (OSError, ValueError) as e:
+        print(f"An error occurred: {e}")
         import traceback
         traceback.print_exc()
 
