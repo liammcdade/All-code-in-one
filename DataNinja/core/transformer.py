@@ -1,4 +1,4 @@
-```python
+
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 import numpy as np
@@ -281,5 +281,3 @@ if __name__ == '__main__':
 
     except Exception as e:
         print(f"Error in Example 3: {e}")
-
-```

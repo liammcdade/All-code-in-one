@@ -1,4 +1,4 @@
-```python
+
 import pandas as pd
 import numpy as np
 
@@ -314,4 +314,3 @@ if __name__ == '__main__':
     except ValueError as e:
         print(f"Caught expected error: {e}")
 
-```
