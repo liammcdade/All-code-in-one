@@ -9,17 +9,22 @@ various driver statistics (average finish, DNF rate, points, etc.),
 assigns a score to each driver based on these stats, and then runs a
 Monte Carlo simulation to estimate each driver's chance of winning a
 hypothetical championship.
+
+DATA SOURCE: This script requires F1 race data from various sources:
+- Official F1 website: https://www.formula1.com/en/results.html
+- Ergast API: http://ergast.com/mrd/
+- F1DataAnalysis: https://f1dataanalysis.com/
 """
 
 import pandas as pd
 import numpy as np
 import sys
+import os
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
 
 # Configuration
-RESULTS_CSV_FILE = Path("sportsanalysis/F1/Formula1.csv")
 OUTPUT_CSV_FILE = Path("f1_championship_probabilities.csv")
 N_SIMULATIONS: int = 100_000
 RANDOM_SEED: int = 42
@@ -47,7 +52,41 @@ def setup_logging() -> None:
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 
-def load_f1_data(file_path: Path) -> pd.DataFrame:
+def get_file_path() -> str:
+    """Get file path from user with helpful guidance."""
+    print("=" * 80)
+    print("🏎️ FORMULA 1 CHAMPIONSHIP PROBABILITY ANALYSIS")
+    print("=" * 80)
+    print("\nThis analysis requires F1 race results data.")
+    print("📊 DATA SOURCES:")
+    print("  • Official F1: https://www.formula1.com/en/results.html")
+    print("  • Ergast API: http://ergast.com/mrd/")
+    print("  • F1DataAnalysis: https://f1dataanalysis.com/")
+    print("\nRequired CSV columns: Driver, Position, Starting Grid, Points, Set Fastest Lap, Time/Retired")
+    print("\nPlease provide the path to your F1 race results CSV file:")
+    print("💡 Suggestion: f1_race_results.csv")
+    print("📁 Please enter the full path to your CSV file:")
+    
+    while True:
+        file_path = input("File path: ").strip().strip('"')
+        
+        if not file_path:
+            print("❌ Please provide a file path.")
+            continue
+            
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {file_path}")
+            print("Please check the path and try again.")
+            continue
+            
+        if not file_path.lower().endswith('.csv'):
+            print("❌ Please provide a CSV file.")
+            continue
+            
+        return file_path
+
+
+def load_f1_data(file_path: str) -> pd.DataFrame:
     """Load F1 race data from CSV file."""
     try:
         df = pd.read_csv(file_path)
@@ -190,8 +229,11 @@ def main() -> None:
     setup_logging()
     
     try:
+        # Get file path from user
+        file_path = get_file_path()
+        
         # Load and clean data
-        df = load_f1_data(RESULTS_CSV_FILE)
+        df = load_f1_data(file_path)
         df = clean_f1_data(df)
         
         # Calculate driver statistics

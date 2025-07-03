@@ -3,6 +3,9 @@ EURO 2024 Team Analysis
 
 This script analyzes and displays normalized squad metrics for Euro 2024 teams with live updates.
 It provides real-time ranking updates as different weight combinations are applied.
+
+DATA SOURCE: This script requires data from FBRef.com
+- Team data: https://fbref.com/en/comps/676/stats/squads/
 """
 
 import pandas as pd
@@ -17,7 +20,6 @@ import logging
 
 
 # Configuration
-DATA_FILE = "euro/euro2024-country.csv"
 UPDATE_DELAY = 0.3  # seconds between updates
 NUM_ITERATIONS = 20
 WEIGHT_STEP = 0.05
@@ -26,6 +28,36 @@ WEIGHT_STEP = 0.05
 def setup_logging() -> None:
     """Setup logging configuration."""
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+
+def get_file_path() -> str:
+    """Get file path from user with helpful guidance."""
+    print("=" * 80)
+    print("🏆 EURO 2024 TEAM ANALYSIS")
+    print("=" * 80)
+    print("\nThis analysis requires team statistics data from FBRef.com")
+    print("📊 DATA SOURCE: https://fbref.com/en/comps/676/stats/squads/ (UEFA Euro)")
+    print("\nPlease provide the path to your EURO 2024 team statistics CSV file:")
+    print("💡 Suggestion: euro2024-team-stats.csv (from FBRef squad stats page)")
+    print("📁 Please enter the full path to your CSV file:")
+    
+    while True:
+        file_path = input("File path: ").strip().strip('"')
+        
+        if not file_path:
+            print("❌ Please provide a file path.")
+            continue
+            
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {file_path}")
+            print("Please check the path and try again.")
+            continue
+            
+        if not file_path.lower().endswith('.csv'):
+            print("❌ Please provide a CSV file.")
+            continue
+            
+        return file_path
 
 
 def load_data(file_path: str) -> pd.DataFrame:
@@ -188,8 +220,11 @@ def main() -> None:
     setup_logging()
     
     try:
+        # Get file path from user
+        file_path = get_file_path()
+        
         # Load data
-        df = load_data(DATA_FILE)
+        df = load_data(file_path)
         
         # Run live analysis
         score_tracker = run_live_analysis(df)

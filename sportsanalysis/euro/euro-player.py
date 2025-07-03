@@ -3,6 +3,10 @@ EURO 2024 Best XI Analysis
 
 This script computes and displays the EURO 2024 Best XI based on player and team metrics.
 It combines individual player performance with team quality and tournament progress.
+
+DATA SOURCE: This script requires data from FBRef.com
+- Player data: https://fbref.com/en/comps/676/stats/players/
+- Team data: https://fbref.com/en/comps/676/stats/squads/
 """
 
 import pandas as pd
@@ -11,17 +15,64 @@ from sklearn.preprocessing import MinMaxScaler
 from pathlib import Path
 import logging
 from typing import List, Dict, Any
+import os
 
 
 # Configuration
-PLAYER_DATA_FILE = "euro/euro2024-player.csv"
-TEAM_DATA_FILE = "euro/euro2024-country.csv"
 FORMATION = {"GK": 1, "DF": 4, "MF": 3, "FW": 3}  # 4-3-3 formation
 
 
 def setup_logging() -> None:
     """Setup logging configuration."""
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+
+def get_file_path(prompt: str, default_suggestion: str) -> str:
+    """Get file path from user with helpful guidance."""
+    print(f"\n{prompt}")
+    print(f"💡 Suggestion: {default_suggestion}")
+    print("📁 Please enter the full path to your CSV file:")
+    
+    while True:
+        file_path = input("File path: ").strip().strip('"')
+        
+        if not file_path:
+            print("❌ Please provide a file path.")
+            continue
+            
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {file_path}")
+            print("Please check the path and try again.")
+            continue
+            
+        if not file_path.lower().endswith('.csv'):
+            print("❌ Please provide a CSV file.")
+            continue
+            
+        return file_path
+
+
+def get_data_files() -> tuple[str, str]:
+    """Get player and team data file paths from user."""
+    print("=" * 80)
+    print("🏆 EURO 2024 BEST XI ANALYSIS")
+    print("=" * 80)
+    print("\nThis analysis requires two CSV files from FBRef.com:")
+    print("1. Player statistics data")
+    print("2. Team/squad statistics data")
+    print("\n📊 DATA SOURCE: https://fbref.com/en/comps/676/ (UEFA Euro)")
+    
+    player_path = get_file_path(
+        "Please provide the path to your EURO 2024 player statistics CSV file:",
+        "euro2024-player-stats.csv (from FBRef player stats page)"
+    )
+    
+    team_path = get_file_path(
+        "Please provide the path to your EURO 2024 team statistics CSV file:",
+        "euro2024-team-stats.csv (from FBRef squad stats page)"
+    )
+    
+    return player_path, team_path
 
 
 def load_data(player_path: str, team_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -169,8 +220,11 @@ def main() -> None:
     setup_logging()
     
     try:
+        # Get file paths from user
+        player_path, team_path = get_data_files()
+        
         # Load data
-        players, teams = load_data(PLAYER_DATA_FILE, TEAM_DATA_FILE)
+        players, teams = load_data(player_path, team_path)
         
         # Clean data
         players = clean_dataframe(players)
