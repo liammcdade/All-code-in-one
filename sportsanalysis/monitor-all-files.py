@@ -1,11 +1,25 @@
+"""
+File System Monitor
+
+This script monitors all files in a specified directory and its subdirectories.
+It prints messages to the console when files are created, deleted, modified, or moved.
+"""
+
 import time
 import sys
 import os
+from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from typing import Optional
 
 
-class MyEventHandler(FileSystemEventHandler):
+class FileEventHandler(FileSystemEventHandler):
+    """Handles file system events for monitoring."""
+    
+    def __init__(self, verbose: bool = True):
+        self.verbose = verbose
+    
     def on_created(self, event):
         if not event.is_directory:
             print(f"Created: {event.src_path}")
@@ -23,12 +37,35 @@ class MyEventHandler(FileSystemEventHandler):
             print(f"Moved/Renamed: From '{event.src_path}' to '{event.dest_path}'")
 
 
-def start_monitoring(path):
-    event_handler = MyEventHandler()
-    observer = Observer()
-    observer.schedule(event_handler, path, recursive=True)
+def validate_directory(path: str) -> bool:
+    """Validate that the directory exists and is accessible."""
+    if not os.path.exists(path):
+        print(f"Error: The specified path '{path}' does not exist.")
+        return False
+    
+    if not os.path.isdir(path):
+        print(f"Error: The specified path '{path}' is not a directory.")
+        return False
+    
+    if not os.access(path, os.R_OK):
+        print(f"Error: No read permission for directory '{path}'.")
+        return False
+    
+    return True
 
-    print(f"Monitoring directory: {path}")
+
+def get_default_directory() -> str:
+    """Get the default directory to monitor based on the current working directory."""
+    return str(Path.cwd())
+
+
+def start_monitoring(directory_path: str, recursive: bool = True) -> None:
+    """Start monitoring the specified directory."""
+    event_handler = FileEventHandler()
+    observer = Observer()
+    observer.schedule(event_handler, directory_path, recursive=recursive)
+
+    print(f"Monitoring directory: {directory_path}")
     print("Press Ctrl+C to stop monitoring.")
 
     observer.start()
@@ -38,33 +75,27 @@ def start_monitoring(path):
     except KeyboardInterrupt:
         observer.stop()
         print("\nMonitoring stopped.")
-    observer.join()
+    finally:
+        observer.join()
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Main function to handle command line arguments and start monitoring."""
+    # Parse command line arguments
     if len(sys.argv) > 1:
         directory_to_monitor = sys.argv[1]
     else:
-        # Default directory to monitor if no argument is provided
-        # Set to C:\ for Windows, or adjust for other OS if needed
-        directory_to_monitor = (
-            "C:\\"  # Or "C:/" or "/mnt/c" for WSL or equivalent root for Linux/macOS
-        )
-        print(
-            f"No directory specified. Monitoring the default drive: {directory_to_monitor}"
-        )
-        print(
-            "To monitor a specific directory, run the script like: python your_script_name.py /path/to/directory"
-        )
+        directory_to_monitor = get_default_directory()
+        print(f"No directory specified. Monitoring current directory: {directory_to_monitor}")
+        print("To monitor a specific directory, run: python monitor-all-files.py /path/to/directory")
 
-    if not os.path.isdir(directory_to_monitor):
-        print(
-            f"Error: The specified directory '{directory_to_monitor}' does not exist."
-        )
-        return
+    # Validate directory
+    if not validate_directory(directory_to_monitor):
+        sys.exit(1)
 
+    # Start monitoring
     start_monitoring(directory_to_monitor)
 
-# hi there
-# This script monitors all files in a specified directory and its subdirectories.
-# It prints messages to the console when files are created, deleted, modified, or moved.
+
+if __name__ == "__main__":
+    main()
