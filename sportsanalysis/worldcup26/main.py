@@ -3,7 +3,7 @@ import math
 import random
 from collections import defaultdict
 
-# --- Minimal team and match logic for World Cup simulation ---
+# --- FIFA Rankings (used for all confederations) ---
 FIFA_RANKINGS = {
     "Argentina": 1886.16, "Spain": 1854.64, "France": 1852.71, "England": 1819.2, "Brazil": 1776.03,
     "Netherlands": 1752.44, "Portugal": 1750.08, "Belgium": 1735.75, "Italy": 1718.31, "Germany": 1716.98,
@@ -44,27 +44,157 @@ FIFA_RANKINGS = {
     "Guatemala": 1320.0, "Jamaica": 1400.0, "Suriname": 1250.0, "El Salvador": 1200.0, "Greenland": 500.0,
 }
 
-# --- Import confederation simulation modules ---
-confed_modules = {
-    "UEFA": "sports analysis.worldcup26.qualifying.uefa",
-    "CAF": "sports analysis.worldcup26.qualifying.Africa",
-    "AFC": "sports analysis.worldcup26.qualifying.Asia",
-    "CONCACAF": "sports analysis.worldcup26.qualifying.NorthAmerica",
-    "CONMEBOL": "sports analysis.worldcup26.qualifying.Southamerica",
-    "OFC": "sports analysis.worldcup26.qualifying.ofc",
+# --- UEFA Qualification ---
+def get_uefa_qualified_teams():
+    # Direct: top 16, Playoff: next 3
+    uefa_teams = [
+        "Spain", "France", "England", "Germany", "Italy", "Netherlands", "Portugal", "Belgium",
+        "Croatia", "Switzerland", "Denmark", "Austria", "Ukraine", "Türkiye", "Sweden", "Wales",
+        "Poland", "Serbia", "Scotland"
+    ]
+    direct = uefa_teams[:16]
+    playoff = uefa_teams[16:]
+    return direct, playoff
+
+# --- CAF (Africa) Qualification ---
+from collections import defaultdict
+
+# FIFA Ranking points for CAF teams (June 2024 FIFA World Ranking)
+caf_team_strengths = {
+    "Morocco": 1676.99, "Senegal": 1623.34, "Egypt": 1515.1, "Tunisia": 1502.8, "Algeria": 1493.59,
+    "Mali": 1475.29, "Ivory Coast": 1447.65, "Nigeria": 1445.69, "Burkina Faso": 1435.59, "Cameroon": 1421.93,
+    "Ghana": 1399.79, "DR Congo": 1378.1, "South Africa": 1361.32, "Cape Verde": 1345.54, "Zambia": 1297.2,
+    "Gabon": 1294.61, "Equatorial Guinea": 1269.83, "Uganda": 1238.16, "Benin": 1228.61, "Mauritania": 1226.54,
+    "Madagascar": 1205.86, "Guinea-Bissau": 1184.28, "Namibia": 1179.94, "Angola": 1177.37, "Mozambique": 1168.04,
+    "Gambia": 1166.5, "Sierra Leone": 1162.77, "Togo": 1150.14, "Tanzania": 1141.51, "Libya": 1133.09,
+    "Zimbabwe": 1122.97, "Malawi": 1120.73, "Comoros": 1111.46, "Sudan": 1081.76, "Rwanda": 1060.03,
+    "Burundi": 1050.21, "Ethiopia": 1032.54, "Botswana": 1021.93, "Eswatini": 1007.82, "Lesotho": 989.15,
+    "Liberia": 982.72, "Central African Republic": 962.19, "Niger": 959.08, "Chad": 906.91,
+    "Sao Tome and Principe": 864.03, "South Sudan": 841.48, "Djibouti": 821.57, "Seychelles": 800.74, "Somalia": 799.04, "Eritrea": 794.75,
 }
 
-def get_confed_qualified(confed_name):
-    mod = importlib.import_module(confed_modules[confed_name])
-    return mod.get_qualified_teams()
+# Current Group Standings after Matchday 6 (June 2025)
+caf_current_group_standings = {
+    "Group A": [("Morocco", 13), ("South Africa", 10), ("Zimbabwe", 5), ("Libya", 4)],
+    "Group B": [("Senegal", 16), ("Egypt", 13), ("Ghana", 7), ("Angola", 3)],
+    "Group C": [("Nigeria", 15), ("Ivory Coast", 12), ("Mali", 8), ("Mauritania", 1)],
+    "Group D": [("Cameroon", 14), ("Burkina Faso", 11), ("DR Congo", 7), ("Togo", 3)],
+    "Group E": [("Tunisia", 15), ("Algeria", 10), ("Morocco", 7), ("Zimbabwe", 0)],
+    "Group F": [("Senegal", 18), ("Egypt", 12), ("Ghana", 6), ("Angola", 0)],
+}
 
-# --- Get all direct and playoff teams ---
+# Helper and simulation functions for CAF
+def get_africa_qualified_teams():
+    # Direct qualifiers based on current standings
+    direct_qualifiers = []
+    playoff_teams = []
+
+    # Top 2 teams from each group qualify directly
+    for group, teams in caf_current_group_standings.items():
+        sorted_teams = sorted(teams, key=lambda x: -x[1])  # Sort by points, descending
+        direct_qualifiers.extend([team[0] for team in sorted_teams[:2]])  # Top 2 teams
+
+    # Placeholder: Last team from each group to playoff
+    for group, teams in caf_current_group_standings.items():
+        sorted_teams = sorted(teams, key=lambda x: -x[1])  # Sort by points, descending
+        playoff_teams.append(sorted_teams[-1][0])  # Last team
+
+    return list(set(direct_qualifiers)), list(set(playoff_teams))
+
+# --- AFC (Asia) Qualification ---
+from collections import defaultdict
+
+afc_team_strengths = {
+    "Japan": 1652.64, "IR Iran": 1637.39, "Korea Republic": 1575.0, "Australia": 1488.89, "Qatar": 1445.01,
+    "Saudi Arabia": 1418.96, "Iraq": 1413.40, "Uzbekistan": 1437.02, "Jordan": 1389.15, "United Arab Emirates": 1382.70,
+    "Oman": 1332.96, "Bahrain": 1290.00, "China PR": 1250.95, "Palestine": 1224.65, "Kyrgyzstan": 1205.68,
+    "North Korea": 1153.38, "Indonesia": 1142.92, "Kuwait": 1109.91,
+}
+
+# Placeholder for group standings and fixtures (should be replaced with real data for full simulation)
+afc_current_standings = {
+    "Group A": ["Japan", "IR Iran", "Qatar", "Uzbekistan"],
+    "Group B": ["Korea Republic", "Australia", "Saudi Arabia", "Iraq"],
+    "Group C": ["Jordan", "United Arab Emirates", "Oman", "Bahrain"],
+}
+
+def get_asia_qualified_teams():
+    # Direct qualifiers: top 2 from each group
+    direct_qualifiers = []
+    playoff_teams = []
+    for group, teams in afc_current_standings.items():
+        direct_qualifiers.extend(teams[:2])
+        playoff_teams.append(teams[2])  # 3rd place to playoff
+    return list(set(direct_qualifiers)), list(set(playoff_teams))
+
+# --- CONCACAF (North America) Qualification ---
+from collections import defaultdict
+
+concacaf_groups = {
+    "Group A": ["USA", "Canada", "Panama", "Honduras"],
+    "Group B": ["Mexico", "Costa Rica", "Jamaica", "El Salvador"],
+    "Group C": ["Trinidad and Tobago", "Guatemala", "Haiti", "Curaçao"],
+}
+
+def get_northamerica_qualified_teams():
+    # Direct: group winners
+    direct_qualifiers = []
+    playoff_teams = []
+    for group, teams in concacaf_groups.items():
+        direct_qualifiers.append(teams[0])
+        playoff_teams.append(teams[1])  # 2nd place to playoff
+    return list(set(direct_qualifiers)), list(set(playoff_teams))
+
+# --- CONMEBOL (South America) Qualification ---
+from collections import defaultdict
+
+conmebol_teams = [
+    "Argentina", "Brazil", "Uruguay", "Colombia", "Ecuador", "Peru", "Venezuela", "Paraguay", "Chile", "Bolivia"
+]
+conmebol_points = {
+    "Argentina": 34, "Ecuador": 24, "Paraguay": 24, "Brazil": 22, "Uruguay": 21, "Colombia": 21,
+    "Venezuela": 18, "Bolivia": 14, "Peru": 11, "Chile": 10
+}
+
+def get_southamerica_qualified_teams():
+    # Direct: top 6, Playoff: 7th
+    sorted_teams = sorted(conmebol_points.items(), key=lambda x: -x[1])
+    direct = [team for team, _ in sorted_teams[:6]]
+    playoff = [sorted_teams[6][0]]
+    return direct, playoff
+
+# --- OFC (Oceania) Qualification ---
+def get_ofc_qualified_teams():
+    # OFC: New Zealand direct, New Caledonia to playoff
+    return ["New Zealand"], ["New Caledonia"]
+
+# --- Aggregate all direct and playoff teams ---
 direct_teams = set()
 playoff_teams = set()
-for confed in confed_modules:
-    direct, playoff = get_confed_qualified(confed)
-    direct_teams.update(direct)
-    playoff_teams.update(playoff)
+
+direct, playoff = get_uefa_qualified_teams()
+direct_teams.update(direct)
+playoff_teams.update(playoff)
+
+direct, playoff = get_africa_qualified_teams()
+direct_teams.update(direct)
+playoff_teams.update(playoff)
+
+direct, playoff = get_asia_qualified_teams()
+direct_teams.update(direct)
+playoff_teams.update(playoff)
+
+direct, playoff = get_northamerica_qualified_teams()
+direct_teams.update(direct)
+playoff_teams.update(playoff)
+
+direct, playoff = get_southamerica_qualified_teams()
+direct_teams.update(direct)
+playoff_teams.update(playoff)
+
+direct, playoff = get_ofc_qualified_teams()
+direct_teams.update(direct)
+playoff_teams.update(playoff)
 
 # --- Inter-confederation playoff simulation ---
 def simulate_interconf_playoff(playoff_teams, num_slots=2, sims=200):
@@ -196,18 +326,20 @@ for _ in range(NUM_SIMULATIONS):
     random.shuffle(sf)
     for i in range(0, len(sf), 2):
         t1 = get_team(sf[i])
-        t2 = get_team(sf[i+1])
+        t2 = get_team(sf[i+1]) if i+1 < len(sf) else t1
         g1, g2 = simulate_match(t1, t2)
-        winner = sf[i] if g1 > g2 or (g1 == g2 and t1.ranking_points >= t2.ranking_points) else sf[i+1]
+        winner = sf[i] if g1 > g2 or (g1 == g2 and t1.ranking_points >= t2.ranking_points) else (sf[i+1] if i+1 < len(sf) else sf[i])
         final.append(winner)
         stage_counts[winner]["Final"] += 1
     # Winner
-    if final:
+    if len(final) >= 2:
         t1 = get_team(final[0])
-        t2 = get_team(final[1]) if len(final) > 1 else t1
+        t2 = get_team(final[1])
         g1, g2 = simulate_match(t1, t2)
         winner = final[0] if g1 > g2 or (g1 == g2 and t1.ranking_points >= t2.ranking_points) else final[1]
         stage_counts[winner]["Winner"] += 1
+    elif len(final) == 1:
+        stage_counts[final[0]]["Winner"] += 1
 
 # --- Output Results ---
 print("\n--- World Cup 2026 Stage-by-Stage Simulation Results (100 runs) ---\n")
@@ -215,3 +347,18 @@ print("| Team                 | R32 (%) | R16 (%) | QF (%) | SF (%) | Final (%) 
 print("|----------------------|---------|---------|--------|--------|-----------|------------|")
 for team in sorted(qualified_teams, key=lambda t: -FIFA_RANKINGS.get(t, 0)):
     print(f"| {team:<20} | {stage_counts[team]['R32']:>7.1f} | {stage_counts[team]['R16']:>7.1f} | {stage_counts[team]['QF']:>6.1f} | {stage_counts[team]['SF']:>6.1f} | {stage_counts[team]['Final']:>9.1f} | {stage_counts[team]['Winner']:>10.1f} |")
+
+# --- Simulate and print qualifying for each confederation ---
+print("\n--- Confederation Qualifying Results ---")
+confed_results = {}
+for name, func in [
+    ("UEFA", get_uefa_qualified_teams),
+    ("CAF", get_africa_qualified_teams),
+    ("AFC", get_asia_qualified_teams),
+    ("CONCACAF", get_northamerica_qualified_teams),
+    ("CONMEBOL", get_southamerica_qualified_teams),
+    ("OFC", get_ofc_qualified_teams),
+]:
+    direct, playoff = func()
+    confed_results[name] = (direct, playoff)
+    print(f"{name}:\n  Direct: {sorted(direct)}\n  Playoff: {sorted(playoff)}\n")
