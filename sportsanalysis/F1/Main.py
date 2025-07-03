@@ -14,24 +14,24 @@ Assumes 'Formula1_2025Season_RaceResults.csv' is in the same directory.
 import pandas as pd
 import numpy as np
 import sys
+from pathlib import Path
+from typing import Optional
 
 # --- Configuration ---
-RESULTS_CSV_FILE = "Formula1_2025Season_RaceResults.csv"
-OUTPUT_CSV_FILE = "f1_championship_probabilities.csv"
-N_SIMULATIONS = 100_000
-RANDOM_SEED = 42
+RESULTS_CSV_FILE = Path("sportsanalysis\F1\Formula1.csv")
+OUTPUT_CSV_FILE = Path("f1_championship_probabilities.csv")
+N_SIMULATIONS: int = 100_000
+RANDOM_SEED: int = 42
 
 # Define weights for score calculation (can be tuned)
-WEIGHT_AVG_FINISH = -50  # Higher average finish position is worse
-WEIGHT_AVG_GRID = (
-    -2
-)  # Higher average grid position is generally worse (less impact than finish)
-WEIGHT_DNF_RATE = -200  # Higher DNF rate is significantly worse
-WEIGHT_TOTAL_POINTS = 5  # More points are better
-WEIGHT_FASTEST_LAPS = 10  # More fastest laps are better
+WEIGHT_AVG_FINISH: int = -50  # Higher average finish position is worse
+WEIGHT_AVG_GRID: int = -2    # Higher average grid position is generally worse (less impact than finish)
+WEIGHT_DNF_RATE: int = -200  # Higher DNF rate is significantly worse
+WEIGHT_TOTAL_POINTS: int = 5  # More points are better
+WEIGHT_FASTEST_LAPS: int = 10  # More fastest laps are better
 
 
-def main():
+def main() -> None:
     """
     Loads F1 race data, calculates driver performance scores,
     and simulates championship win probabilities.

@@ -77,27 +77,29 @@ TEAMS = [
     (32, "Red Bull Salzburg", "H", 2, 1, 1, 0, 2, 1, 4),
 ]
 
+from typing import List, Dict, Tuple, DefaultDict
+
 class Team:
     """
     Represents a football team with its statistics in a group stage.
     """
-    def __init__(self, id, name, group, mp, w, d, l, gf, ga, pts):
-        self.id = id
-        self.name = name
-        self.group = group
-        self.mp = mp  # Matches Played
-        self.w = w    # Wins
-        self.d = d    # Draws
-        self.l = l    # Losses
-        self.gf = gf  # Goals For
-        self.ga = ga  # Goals Against
-        self.pts = pts # Points
+    def __init__(self, id: int, name: str, group: str, mp: int, w: int, d: int, l: int, gf: int, ga: int, pts: int):
+        self.id: int = id
+        self.name: str = name
+        self.group: str = group
+        self.mp: int = mp  # Matches Played
+        self.w: int = w    # Wins
+        self.d: int = d    # Draws
+        self.l: int = l    # Losses
+        self.gf: int = gf  # Goals For
+        self.ga: int = ga  # Goals Against
+        self.pts: int = pts # Points
 
-    def goal_diff(self):
+    def goal_diff(self) -> int:
         """Calculates the goal difference (GF - GA)."""
         return self.gf - self.ga
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation of the Team object."""
         return f"{self.name} (Pts:{self.pts} GD:{self.goal_diff()} GF:{self.gf} GA:{self.ga})"
 

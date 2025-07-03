@@ -52,16 +52,18 @@ def reset_table(table):
         table[team].update({'P':0,'W':0,'D':0,'L':0,'GF':0,'GA':0,'GD':0,'Pts':0})
 
 # --- Print table ---
-def print_table(table):
-    columns = ['P','W','D','L','GF','GA','GD','Pts']
+def print_table(table: dict) -> None:
+    """Prints the table in a simple format."""
+    columns = ['P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts']
     print("Group, Team, " + ", ".join(columns))
     for team, stats in table.items():
         stat_str = " ".join([f"{col}:{stats[col]}" for col in columns])
         print(f"{stats['Group']}, {team}, {stat_str}")
 
-# --- Helper: Print table sorted by group and points ---
-def print_full_table(table):
-    columns = ['P','W','D','L','GF','GA','GD','Pts']
+# --- Print table sorted by group and points ---
+def print_full_table(table: dict) -> None:
+    """Prints the table sorted by group, points, goal difference, and goals for."""
+    columns = ['P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts']
     print("Group, Team, " + ", ".join(columns))
     teams = list(table.items())
     teams.sort(key=lambda x: (x[1]['Group'], -x[1]['Pts'], -x[1]['GD'], -x[1]['GF'], x[0]))
@@ -93,15 +95,7 @@ def update_match(table, team1, team2, goals1, goals2):
         table[team1]['Pts'] += 1
         table[team2]['Pts'] += 1
 
-# --- Helper: Print table sorted by group and points ---
-def print_full_table(table):
-    columns = ['P','W','D','L','GF','GA','GD','Pts']
-    print("Group, Team, " + ", ".join(columns))
-    teams = list(table.items())
-    teams.sort(key=lambda x: (x[1]['Group'], -x[1]['Pts'], -x[1]['GD'], -x[1]['GF'], x[0]))
-    for team, stats in teams:
-        stat_str = " ".join([f"{col}:{stats[col]}" for col in columns])
-        print(f"{stats['Group']}, {team}, {stat_str}")
+# (Removed duplicate print_full_table definition)
 
 # --- Simulate a single match using rankings ---
 def simulate_match_result_strength(team1, team2):
