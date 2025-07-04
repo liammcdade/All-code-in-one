@@ -66,6 +66,15 @@ See `dataninja --help` for all available commands.
 - save <output>
 - convert <input> <output>
 - sql, ml, geo (plugins)
+- calc (plugin for scientific calculations and unit conversions)
+  - `dataninja calc sin <value>`
+  - `dataninja calc cos <value>`
+  - `dataninja calc tan <value>`
+  - `dataninja calc log <value> [--base <base>]`
+  - `dataninja calc sqrt <value>`
+  - `dataninja calc convert <value> <from_unit> <to_unit> <category>`
+    - Categories: `length`, `weight`, `temperature`
+    - Example: `dataninja calc convert 100 C F temperature`
 
 ## Output Rendering
 

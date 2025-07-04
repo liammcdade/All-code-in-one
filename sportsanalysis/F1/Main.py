@@ -22,6 +22,7 @@ import sys
 import os
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
+import plotext as plt # For terminal plotting
 
 
 # Configuration
@@ -215,6 +216,20 @@ def display_results(final_probabilities: pd.Series) -> None:
         print(f"{medal} {driver}: {prob:.2f}%")
 
 
+def plot_win_probabilities(probabilities_series: pd.Series, top_n: int = 10) -> None:
+    """Display a bar chart of win probabilities in the terminal."""
+    top_probs = probabilities_series.head(top_n)
+    drivers = top_probs.index.tolist()
+    probs = top_probs.values.tolist()
+
+    plt.clf()
+    plt.bar(drivers, probs)
+    plt.title(f"Top {top_n} Driver Championship Win Probabilities (%)")
+    plt.xlabel("Driver")
+    plt.ylabel("Win Probability (%)")
+    plt.show()
+
+
 def save_results(final_probabilities: pd.Series, output_file: Path) -> None:
     """Save results to CSV file."""
     try:
@@ -251,6 +266,7 @@ def main() -> None:
         
         # Display and save results
         display_results(final_probabilities)
+        plot_win_probabilities(final_probabilities) # Add plot display
         save_results(final_probabilities, OUTPUT_CSV_FILE)
         
     except Exception as e:
