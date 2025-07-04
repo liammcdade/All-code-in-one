@@ -15,10 +15,15 @@ SCRIPT_DIRS = [
 PLUGIN_DIR = PROJECT_ROOT / "DataNinja/plugins"
 
 # Standard library modules (Python 3.8+)
+stdlib_mods = None
 try:
     import stdlib_list
     stdlib_mods = set(stdlib_list.stdlib_list())
 except ImportError:
+    # If stdlib_list is not found, it will be added to missing dependencies
+    pass
+
+if stdlib_mods is None: # Happens if import stdlib_list failed
     stdlib_mods = set(sys.builtin_module_names)
 
 
@@ -63,8 +68,16 @@ def check_dependencies():
     imports = find_imports()
     missing = []
     print("\nChecking dependencies...")
+
+    # Check for stdlib_list first
+    if pkgutil.find_loader("stdlib_list") is None:
+        print("Missing: stdlib_list (recommended for better accuracy)")
+        missing.append("stdlib_list")
+
     for mod in sorted(imports):
-        if mod in stdlib_mods:
+        if mod in stdlib_mods: # stdlib_mods will be sys.builtin_module_names if stdlib_list is missing
+            continue
+        if mod == "stdlib_list": # Already handled
             continue
         if pkgutil.find_loader(mod) is None:
             print(f"Missing: {mod}")
