@@ -4,6 +4,8 @@ from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
+import pandas as pd # For creating Series for plotting
+import plotext as plt # For terminal plotting
 
 
 @dataclass
@@ -630,8 +632,29 @@ def main():
     for i, player in enumerate(rankings['batting_rankings'][:5], 1):
         print(f"{i}. {player['name']} - {player['ops']:.3f}")
     
+    print("\nTop Batters by OPS:")
+    batting_data = {player['name']: player['ops'] for player in rankings['batting_rankings']}
+    batting_series = pd.Series(batting_data)
+    # Ensure the function is defined before it's called, or defined globally.
+    # For simplicity, assuming plot_generic_top_n is defined globally or imported.
+    plot_generic_top_n(batting_series, "Top 10 Batters by OPS", "Player", "OPS")
+
     print("\n=== Analysis Complete ===")
 
 
 if __name__ == "__main__":
-    main() 
+    main()
+
+
+def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10) -> None:
+    """Displays a generic bar chart for a pandas Series in the terminal."""
+    top_data = data_series.head(top_n)
+    items = top_data.index.tolist()
+    values = top_data.values.tolist()
+
+    plt.clf()
+    plt.bar(items, values)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()

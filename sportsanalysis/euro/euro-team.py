@@ -17,6 +17,8 @@ from typing import List, Dict, Any
 from sklearn.preprocessing import MinMaxScaler
 from tabulate import tabulate
 import logging
+import plotext as plt # For terminal plotting
+# pandas is already imported as pd
 
 
 # Configuration
@@ -214,6 +216,13 @@ def display_final_results(score_tracker: pd.DataFrame) -> None:
     if len(final_rankings) > 2:
         print(f"🥉 Third: {final_rankings.iloc[2]['Squad']} (Score: {final_rankings.iloc[2]['AvgScore']:.3f})")
 
+    # Plot the final rankings
+    # Create a Series from the final_rankings DataFrame for plotting
+    # Ensure 'Squad' is index and 'AvgScore' is value
+    if not final_rankings.empty:
+        plot_data = final_rankings.set_index('Squad')['AvgScore']
+        plot_generic_top_n(plot_data, "Final Euro Team Rankings by AvgScore", "Team (Squad)", "Average Score", top_n=len(plot_data), sort_ascending=False)
+
 
 def main() -> None:
     """Main function to run the EURO 2024 team analysis."""
@@ -239,3 +248,20 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10, sort_ascending=False) -> None:
+    """Displays a generic bar chart for a pandas Series in the terminal."""
+    # Sort before taking top_n if specified
+    sorted_series = data_series.sort_values(ascending=sort_ascending)
+    top_data = sorted_series.head(top_n)
+
+    items = top_data.index.tolist()
+    values = top_data.values.tolist()
+
+    plt.clf()
+    plt.bar(items, values)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()

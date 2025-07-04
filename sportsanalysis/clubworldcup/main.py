@@ -1,6 +1,8 @@
 import numpy as np
 from collections import defaultdict, Counter
 import random
+import pandas as pd # For creating Series for plotting
+import plotext as plt # For terminal plotting
 
 # --- TEAM/PLAYER ALIAS MAP (not used, but kept for reference) ---
 TEAM_ALIASES = {
@@ -331,8 +333,30 @@ def print_group_qualification_probs(teams, n_sim=10000):
         for t in sorted(group_teams, key=lambda t: -probs[t.name]):
             print(f"{t.name:<28} : {probs[t.name]*100:6.2f}% chance to finish top 2 (qualify)")
 
+        # Plotting for the current group
+        prob_series = pd.Series(probs)
+        plot_title = f"Group {group_name} - Qualification Probabilities"
+        plot_generic_top_n(prob_series, plot_title, "Team", "Qualification Chance (%)", top_n=len(group_teams), sort_ascending=False)
+
 if __name__ == "__main__":
     # Create Team objects from the predefined TEAMS data
     teams = [Team(*row) for row in TEAMS]
     # Run the simulation and print the results
     print_group_qualification_probs(teams, n_sim=10000)
+
+
+def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10, sort_ascending=False) -> None:
+    """Displays a generic bar chart for a pandas Series in the terminal."""
+    # Sort before taking top_n if specified
+    sorted_series = data_series.sort_values(ascending=sort_ascending)
+    top_data = sorted_series.head(top_n) # Show all if less than top_n
+
+    items = top_data.index.tolist()
+    values = (top_data * 100).values.tolist() # Assuming probabilities, convert to percentage for display
+
+    plt.clf()
+    plt.bar(items, values)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()

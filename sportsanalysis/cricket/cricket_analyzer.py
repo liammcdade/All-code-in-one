@@ -4,6 +4,8 @@ from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
+import pandas as pd # For creating Series for plotting
+import plotext as plt # For terminal plotting
 
 
 @dataclass
@@ -546,8 +548,28 @@ def main():
     for i, player in enumerate(rankings['batting_rankings'][:5], 1):
         print(f"{i}. {player['name']} - {player['average']:.2f}")
     
+    # Plot top batsmen by average
+    batting_avg_data = {player['name']: player['average'] for player in rankings['batting_rankings']}
+    batting_avg_series = pd.Series(batting_avg_data) # Already sorted by average in get_ranking_analysis
+    plot_generic_top_n(batting_avg_series, "Top 10 Batsmen by Average", "Player", "Batting Average", top_n=10, sort_ascending=False)
+
     print("\n=== Analysis Complete ===")
 
 
 if __name__ == "__main__":
-    main() 
+    main()
+
+
+def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10, sort_ascending=False) -> None:
+    """Displays a generic bar chart for a pandas Series in the terminal."""
+    sorted_series = data_series.sort_values(ascending=sort_ascending)
+    top_data = sorted_series.head(top_n)
+    items = top_data.index.tolist()
+    values = top_data.values.tolist()
+
+    plt.clf()
+    plt.bar(items, values)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()

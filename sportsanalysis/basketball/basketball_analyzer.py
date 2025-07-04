@@ -4,6 +4,8 @@ from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
+import pandas as pd # For creating Series for plotting
+import plotext as plt # For terminal plotting
 
 
 @dataclass
@@ -396,9 +398,42 @@ def main():
         away_top = max(game.away_players.values(), key=lambda p: p['points'])
         print(f"Top Scorer - {home_top['name']}: {home_top['points']} pts")
         print(f"Top Scorer - {away_top['name']}: {away_top['points']} pts")
+    print()
+
+    # Simulate a season and plot standings
+    print("4. Season Simulation and Standings Plot:")
+    season_data = analyzer.simulate_season()
+    standings = season_data['final_standings']
+    # Convert standings to a Series for plotting (Team: Wins)
+    # Example: {'Los Angeles Lakers': {'wins': 45, 'losses': 37}, ...}
+    # We want: Series({'Los Angeles Lakers': 45, ...})
+    wins_data = {team: data['wins'] for team, data in standings.items()}
+    wins_series = pd.Series(wins_data).sort_values(ascending=False) # Sort by wins descending
+
+    plot_generic_top_n(wins_series, "Team Wins in Simulated Season", "Team", "Wins", top_n=len(wins_series), sort_ascending=False) # Plot all teams
+
+    print("\nFinal Standings from Simulation:")
+    for team, record in sorted(standings.items(), key=lambda item: item[1]['wins'], reverse=True):
+        print(f"{team}: {record['wins']} Wins, {record['losses']} Losses")
     
     print("\n=== Analysis Complete ===")
 
 
 if __name__ == "__main__":
-    main() 
+    main()
+
+
+def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10, sort_ascending=False) -> None:
+    """Displays a generic bar chart for a pandas Series in the terminal."""
+    # Sort before taking top_n if specified (e.g. for wins, higher is better)
+    sorted_series = data_series.sort_values(ascending=sort_ascending)
+    top_data = sorted_series.head(top_n)
+    items = top_data.index.tolist()
+    values = top_data.values.tolist()
+
+    plt.clf()
+    plt.bar(items, values)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()
