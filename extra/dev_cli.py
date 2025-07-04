@@ -8,8 +8,10 @@ from pathlib import Path
 # Directories to scan for scripts
 SCRIPT_DIRS = [
     ("DataNinja", "DataNinja"),
-    ("streamyutilities", "Streamy Utilities"),
-    ("sports analysis", "Sports Analysis"),
+    ("sportsanalysis", "Sports Analysis"),
+    ("scripts", "Utility Scripts"), # Added scripts directory
+    ("extra", "Extra Scripts"),     # Added extra directory
+    # ("streamyutilities", "Streamy Utilities"), # This directory does not seem to exist
 ]
 PLUGIN_DIR = Path("DataNinja/plugins")
 
