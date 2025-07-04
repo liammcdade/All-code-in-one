@@ -1,11 +1,11 @@
 import random
-import json
 from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
-import pandas as pd # For creating Series for plotting
-import plotext as plt # For terminal plotting
+import os
+import pandas as pd
+from .plotting_utils import plot_generic_top_n
 
 
 @dataclass
@@ -384,16 +384,27 @@ class BaseballAnalyzer:
     
     def _load_teams(self) -> List[BaseballTeam]:
         """Load teams from data."""
-        teams = []
-        for team_data in BaseballData.TEAMS_DATA:
-            team = BaseballTeam(**{k: v for k, v in asdict(team_data).items() if k != 'players'})
-            team.players = [p for p in BaseballData.PLAYERS_DATA if p.team == team.name]
-            teams.append(team)
-        return teams
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'teams.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [BaseballTeam(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            BaseballTeam("New York Yankees", "AL", "East", "New York", "Yankee Stadium", "Aaron Boone"),
+            BaseballTeam("Boston Red Sox", "AL", "East", "Boston", "Fenway Park", "Alex Cora"),
+        ]
     
     def _load_players(self) -> List[BaseballPlayer]:
         """Load players from data."""
-        return BaseballData.PLAYERS_DATA.copy()
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'players.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [BaseballPlayer(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            BaseballPlayer("Aaron Judge", "New York Yankees", "RF", "R", "R", 157, 570, 177, 28, 0, 62, 131, 133, 111, 175, 16, 3, 0.311, 0.425, 0.686, 1.111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9.0, 9.5, 7.0, 8.0, 9.0, 5.0, 5.0),
+            BaseballPlayer("Gerrit Cole", "New York Yankees", "P", "R", "R", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 13, 5, 2.63, 33, 33, 0, 0, 0, 200.2, 165, 65, 59, 16, 33, 257, 1.02, 0.0, 0, 0, 0, 5.0, 5.0, 5.0, 5.0, 5.0, 9.5, 9.0),
+        ]
     
     def get_team_by_name(self, name: str) -> Optional[BaseballTeam]:
         """Get team by name."""

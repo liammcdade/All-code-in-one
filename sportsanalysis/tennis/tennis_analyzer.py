@@ -1,11 +1,11 @@
 import random
-import json
 from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
-import pandas as pd # For creating Series for plotting
-import plotext as plt # For terminal plotting
+import os
+import pandas as pd
+from .plotting_utils import plot_generic_top_n
 
 
 @dataclass
@@ -58,52 +58,6 @@ class Tournament:
     prize_money: float
     points: int
     draw_size: int
-
-
-class TennisData:
-    """Contains tennis data and configuration."""
-    
-    # Sample ATP players data
-    ATP_PLAYERS = [
-        TennisPlayer("Novak Djokovic", 1, "Serbia", 36, 188, 77, "Right", "All", 9.2, 9.5, 9.8, 9.3, 9.7, 9.9, 9.8, 98, 24, (1089, 213)),
-        TennisPlayer("Carlos Alcaraz", 2, "Spain", 20, 183, 80, "Right", "All", 8.8, 9.3, 9.7, 9.0, 9.9, 8.5, 9.2, 12, 2, (155, 43)),
-        TennisPlayer("Daniil Medvedev", 3, "Russia", 27, 198, 83, "Right", "Hard", 9.0, 9.4, 9.1, 9.2, 9.3, 8.8, 9.0, 20, 1, (350, 143)),
-        TennisPlayer("Jannik Sinner", 4, "Italy", 22, 188, 76, "Right", "Hard", 8.9, 9.2, 9.4, 8.8, 9.6, 8.7, 9.1, 10, 0, (200, 75)),
-        TennisPlayer("Andrey Rublev", 5, "Russia", 26, 188, 75, "Right", "Hard", 8.7, 8.9, 9.2, 8.5, 8.8, 8.0, 8.9, 15, 0, (320, 180)),
-        TennisPlayer("Stefanos Tsitsipas", 6, "Greece", 25, 193, 89, "Right", "Clay", 8.8, 8.7, 9.3, 8.9, 9.1, 8.2, 8.8, 10, 0, (300, 150)),
-        TennisPlayer("Alexander Zverev", 7, "Germany", 26, 198, 90, "Right", "Hard", 9.1, 8.8, 9.0, 9.1, 9.2, 7.8, 8.7, 21, 0, (380, 160)),
-        TennisPlayer("Holger Rune", 8, "Denmark", 20, 188, 77, "Right", "Clay", 8.5, 8.9, 9.1, 8.7, 9.4, 8.1, 8.6, 4, 0, (120, 60)),
-        TennisPlayer("Hubert Hurkacz", 9, "Poland", 26, 196, 81, "Right", "Hard", 9.3, 8.2, 8.8, 8.6, 8.5, 8.3, 8.8, 7, 0, (200, 120)),
-        TennisPlayer("Taylor Fritz", 10, "USA", 25, 196, 86, "Right", "Hard", 8.9, 8.4, 9.0, 8.3, 8.7, 8.1, 8.5, 6, 0, (180, 110))
-    ]
-    
-    # Sample WTA players data
-    WTA_PLAYERS = [
-        TennisPlayer("Iga Swiatek", 1, "Poland", 22, 176, 65, "Right", "Clay", 8.5, 9.4, 9.6, 8.8, 9.7, 9.2, 9.3, 17, 4, (280, 60)),
-        TennisPlayer("Aryna Sabalenka", 2, "Belarus", 25, 182, 80, "Right", "Hard", 9.2, 8.8, 9.4, 8.5, 8.9, 8.7, 9.0, 13, 2, (350, 150)),
-        TennisPlayer("Coco Gauff", 3, "USA", 19, 175, 65, "Right", "Hard", 8.8, 9.1, 8.9, 8.7, 9.5, 8.9, 9.1, 6, 1, (180, 80)),
-        TennisPlayer("Elena Rybakina", 4, "Kazakhstan", 24, 184, 65, "Right", "Hard", 9.4, 8.6, 9.2, 8.4, 8.8, 8.5, 8.9, 6, 1, (200, 100)),
-        TennisPlayer("Jessica Pegula", 5, "USA", 29, 170, 65, "Right", "Hard", 8.3, 9.0, 8.8, 8.6, 8.7, 8.8, 8.6, 4, 0, (250, 150)),
-        TennisPlayer("Ons Jabeur", 6, "Tunisia", 29, 167, 65, "Right", "Clay", 8.1, 8.9, 8.7, 8.8, 8.9, 8.6, 8.5, 4, 0, (300, 180)),
-        TennisPlayer("Marketa Vondrousova", 7, "Czech Republic", 24, 174, 65, "Left", "Clay", 7.8, 8.8, 8.6, 8.9, 8.6, 8.4, 8.3, 2, 1, (180, 120)),
-        TennisPlayer("Karolina Muchova", 8, "Czech Republic", 27, 180, 70, "Right", "All", 8.2, 8.7, 8.8, 8.5, 8.8, 8.3, 8.4, 1, 0, (150, 100)),
-        TennisPlayer("Maria Sakkari", 9, "Greece", 28, 172, 65, "Right", "Hard", 8.4, 8.5, 8.7, 8.3, 8.9, 8.1, 8.5, 1, 0, (200, 150)),
-        TennisPlayer("Barbora Krejcikova", 10, "Czech Republic", 27, 178, 65, "Right", "Clay", 7.9, 8.6, 8.5, 8.7, 8.4, 8.2, 8.3, 7, 1, (180, 110))
-    ]
-    
-    # Tournament data
-    TOURNAMENTS = [
-        Tournament("Australian Open", "Hard", "Grand Slam", "Melbourne", 50000000, 2000, 128),
-        Tournament("French Open", "Clay", "Grand Slam", "Paris", 45000000, 2000, 128),
-        Tournament("Wimbledon", "Grass", "Grand Slam", "London", 40000000, 2000, 128),
-        Tournament("US Open", "Hard", "Grand Slam", "New York", 50000000, 2000, 128),
-        Tournament("Indian Wells", "Hard", "Masters 1000", "California", 8000000, 1000, 96),
-        Tournament("Miami Open", "Hard", "Masters 1000", "Miami", 8000000, 1000, 96),
-        Tournament("Monte Carlo", "Clay", "Masters 1000", "Monaco", 6000000, 1000, 56),
-        Tournament("Madrid Open", "Clay", "Masters 1000", "Madrid", 7000000, 1000, 96),
-        Tournament("Rome Masters", "Clay", "Masters 1000", "Rome", 7000000, 1000, 96),
-        Tournament("Canadian Open", "Hard", "Masters 1000", "Toronto/Montreal", 6000000, 1000, 56)
-    ]
 
 
 class TennisSimulator:
@@ -220,9 +174,37 @@ class TennisAnalyzer:
     """Analyzes tennis statistics and provides insights."""
     
     def __init__(self):
-        self.atp_players = TennisData.ATP_PLAYERS.copy()
-        self.wta_players = TennisData.WTA_PLAYERS.copy()
-        self.tournaments = TennisData.TOURNAMENTS.copy()
+        self.atp_players = self._load_players('atp_players.csv', fallback='ATP')
+        self.wta_players = self._load_players('wta_players.csv', fallback='WTA')
+        self.tournaments = self._load_tournaments()
+    
+    def _load_players(self, filename: str, fallback: str) -> List[TennisPlayer]:
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', filename)
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [TennisPlayer(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        if fallback == 'ATP':
+            return [
+                TennisPlayer("Novak Djokovic", 1, "Serbia", 36, 188, 77, "Right", "All", 9.2, 9.5, 9.8, 9.3, 9.7, 9.9, 9.8, 98, 24, (1089, 213)),
+                TennisPlayer("Carlos Alcaraz", 2, "Spain", 20, 183, 80, "Right", "All", 8.8, 9.3, 9.7, 9.0, 9.9, 8.5, 9.2, 12, 2, (155, 43)),
+            ]
+        else:
+            return [
+                TennisPlayer("Iga Swiatek", 1, "Poland", 22, 176, 65, "Right", "Clay", 8.5, 9.4, 9.6, 8.8, 9.7, 9.2, 9.3, 17, 4, (280, 60)),
+                TennisPlayer("Aryna Sabalenka", 2, "Belarus", 25, 182, 80, "Right", "Hard", 9.2, 8.8, 9.4, 8.5, 8.9, 8.7, 9.0, 13, 2, (350, 150)),
+            ]
+    
+    def _load_tournaments(self) -> List[Tournament]:
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'tournaments.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [Tournament(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            Tournament("Australian Open", "Hard", "Grand Slam", "Melbourne", 50000000, 2000, 128),
+            Tournament("French Open", "Clay", "Grand Slam", "Paris", 45000000, 2000, 128),
+        ]
     
     def get_player_by_name(self, name: str, tour: str = "ATP") -> Optional[TennisPlayer]:
         """Get player by name from specified tour."""
@@ -472,18 +454,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10, sort_ascending=False) -> None:
-    """Displays a generic bar chart for a pandas Series in the terminal."""
-    sorted_series = data_series.sort_values(ascending=sort_ascending)
-    top_data = sorted_series.head(top_n)
-    items = top_data.index.tolist()
-    values = top_data.values.tolist()
-
-    plt.clf()
-    plt.bar(items, values)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.show()

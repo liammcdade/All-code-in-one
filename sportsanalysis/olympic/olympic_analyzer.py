@@ -1,11 +1,11 @@
 import random
-import json
 from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
-import pandas as pd # For creating Series for plotting
-import plotext as plt # For terminal plotting
+import os
+import pandas as pd
+from .plotting_utils import plot_generic_top_n
 
 
 @dataclass
@@ -95,95 +95,6 @@ class MedalCount:
     silver: int = 0
     bronze: int = 0
     total: int = 0
-
-
-class OlympicData:
-    """Contains Olympic data and configuration."""
-    
-    # Sample Olympic countries
-    COUNTRIES = [
-        OlympicCountry("United States", "USA", 331000000, 69287.54, 
-                      {"Swimming": 246, "Athletics": 342, "Gymnastics": 184, "Basketball": 23}),
-        OlympicCountry("China", "CHN", 1439000000, 12556.33,
-                      {"Swimming": 67, "Athletics": 22, "Gymnastics": 54, "Table Tennis": 60}),
-        OlympicCountry("Great Britain", "GBR", 67200000, 46510.28,
-                      {"Swimming": 73, "Athletics": 55, "Cycling": 38, "Rowing": 31}),
-        OlympicCountry("Russia", "RUS", 144100000, 10126.72,
-                      {"Swimming": 52, "Athletics": 78, "Gymnastics": 45, "Wrestling": 62}),
-        OlympicCountry("Germany", "GER", 83190000, 51216.84,
-                      {"Swimming": 78, "Athletics": 67, "Rowing": 43, "Canoeing": 32}),
-        OlympicCountry("Australia", "AUS", 25690000, 60443.29,
-                      {"Swimming": 190, "Athletics": 21, "Cycling": 14, "Rowing": 11}),
-        OlympicCountry("Netherlands", "NED", 17130000, 52331.98,
-                      {"Swimming": 35, "Athletics": 8, "Cycling": 18, "Speed Skating": 42}),
-        OlympicCountry("France", "FRA", 67390000, 43658.98,
-                      {"Swimming": 38, "Athletics": 14, "Fencing": 42, "Cycling": 41}),
-        OlympicCountry("Italy", "ITA", 60360000, 35220.08,
-                      {"Swimming": 38, "Athletics": 19, "Fencing": 49, "Cycling": 33}),
-        OlympicCountry("Japan", "JPN", 125800000, 39312.22,
-                      {"Swimming": 22, "Athletics": 7, "Judo": 84, "Gymnastics": 31})
-    ]
-    
-    # Sample Olympic events
-    EVENTS = [
-        OlympicEvent("100m Freestyle", "Swimming", "Men", "Individual", "Time", "Aquatic Center", "2024-07-27"),
-        OlympicEvent("100m Freestyle", "Swimming", "Women", "Individual", "Time", "Aquatic Center", "2024-07-27"),
-        OlympicEvent("100m Sprint", "Athletics", "Men", "Individual", "Time", "Olympic Stadium", "2024-07-30"),
-        OlympicEvent("100m Sprint", "Athletics", "Women", "Individual", "Time", "Olympic Stadium", "2024-07-30"),
-        OlympicEvent("Long Jump", "Athletics", "Men", "Individual", "Distance", "Olympic Stadium", "2024-08-02"),
-        OlympicEvent("Long Jump", "Athletics", "Women", "Individual", "Distance", "Olympic Stadium", "2024-08-02"),
-        OlympicEvent("All-Around", "Gymnastics", "Men", "Individual", "Judged", "Gymnastics Arena", "2024-07-29"),
-        OlympicEvent("All-Around", "Gymnastics", "Women", "Individual", "Judged", "Gymnastics Arena", "2024-07-29"),
-        OlympicEvent("Road Race", "Cycling", "Men", "Individual", "Time", "Road Course", "2024-08-03"),
-        OlympicEvent("Road Race", "Cycling", "Women", "Individual", "Time", "Road Course", "2024-08-03"),
-        OlympicEvent("Team Pursuit", "Cycling", "Men", "Team", "Time", "Velodrome", "2024-08-04"),
-        OlympicEvent("Team Pursuit", "Cycling", "Women", "Team", "Time", "Velodrome", "2024-08-04"),
-        OlympicEvent("Basketball", "Basketball", "Men", "Team", "Points", "Basketball Arena", "2024-08-10"),
-        OlympicEvent("Basketball", "Basketball", "Women", "Team", "Points", "Basketball Arena", "2024-08-10")
-    ]
-    
-    # Sample athletes
-    ATHLETES = [
-        # Swimming athletes
-        OlympicAthlete("Caeleb Dressel", "USA", "Swimming", "100m Freestyle", 27, "Men", 188, 86,
-                      9.0, 9.5, 8.5, 9.8, 9.0, 8.5, 47.02, 47.15, 1, 2, 7, 5),
-        OlympicAthlete("Kyle Chalmers", "AUS", "Swimming", "100m Freestyle", 25, "Men", 194, 88,
-                      8.5, 9.3, 8.8, 9.2, 8.8, 8.0, 47.08, 47.25, 2, 2, 5, 2),
-        OlympicAthlete("Emma McKeon", "AUS", "Swimming", "100m Freestyle", 29, "Women", 170, 65,
-                      8.0, 9.2, 8.5, 9.5, 9.2, 9.0, 51.96, 52.10, 1, 3, 11, 7),
-        OlympicAthlete("Sarah Sjostrom", "SWE", "Swimming", "100m Freestyle", 30, "Women", 180, 70,
-                      8.5, 9.4, 8.0, 9.6, 9.0, 9.5, 51.71, 52.05, 2, 4, 8, 3),
-        
-        # Athletics athletes
-        OlympicAthlete("Fred Kerley", "USA", "Athletics", "100m Sprint", 28, "Men", 185, 79,
-                      9.5, 9.8, 8.5, 9.0, 8.8, 7.5, 9.76, 9.78, 1, 1, 2, 1),
-        OlympicAthlete("Ferdinand Omanyala", "KEN", "Athletics", "100m Sprint", 27, "Men", 175, 70,
-                      9.0, 9.7, 8.0, 8.8, 8.5, 6.5, 9.77, 9.79, 2, 1, 0, 0),
-        OlympicAthlete("Sha'Carri Richardson", "USA", "Athletics", "100m Sprint", 23, "Women", 165, 55,
-                      8.5, 9.6, 8.0, 9.2, 8.8, 6.0, 10.65, 10.67, 1, 1, 0, 0),
-        OlympicAthlete("Elaine Thompson-Herah", "JAM", "Athletics", "100m Sprint", 31, "Women", 167, 57,
-                      9.0, 9.7, 8.5, 9.0, 9.2, 8.5, 10.54, 10.56, 2, 3, 5, 3),
-        
-        # Gymnastics athletes
-        OlympicAthlete("Daiki Hashimoto", "JPN", "Gymnastics", "All-Around", 22, "Men", 167, 58,
-                      8.5, 9.0, 8.0, 9.8, 9.5, 7.0, 88.465, 88.200, 1, 1, 2, 1),
-        OlympicAthlete("Brody Malone", "USA", "Gymnastics", "All-Around", 23, "Men", 170, 65,
-                      8.0, 8.8, 7.5, 9.5, 9.0, 6.5, 87.098, 86.500, 3, 1, 0, 0),
-        OlympicAthlete("Simone Biles", "USA", "Gymnastics", "All-Around", 26, "Women", 142, 47,
-                      8.0, 9.2, 8.5, 9.9, 9.8, 9.5, 58.432, 58.100, 1, 3, 32, 7),
-        OlympicAthlete("Rebeca Andrade", "BRA", "Gymnastics", "All-Around", 24, "Women", 150, 48,
-                      8.5, 9.0, 8.0, 9.6, 9.2, 7.5, 57.332, 57.000, 2, 1, 2, 1),
-        
-        # Cycling athletes
-        OlympicAthlete("Wout van Aert", "BEL", "Cycling", "Road Race", 29, "Men", 190, 78,
-                      9.5, 9.0, 9.2, 8.8, 9.0, 8.5, 0, 0, 1, 1, 0, 0),
-        OlympicAthlete("Mathieu van der Poel", "NED", "Cycling", "Road Race", 28, "Men", 184, 75,
-                      9.0, 9.3, 8.8, 9.0, 8.8, 8.0, 0, 0, 2, 1, 0, 0),
-        OlympicAthlete("Annemiek van Vleuten", "NED", "Cycling", "Road Race", 40, "Women", 168, 58,
-                      8.5, 8.8, 9.0, 8.5, 9.5, 9.5, 0, 0, 1, 1, 2, 1),
-        OlympicAthlete("Marianne Vos", "NED", "Cycling", "Road Race", 36, "Women", 168, 58,
-                      8.0, 9.0, 8.8, 8.8, 9.2, 9.8, 0, 0, 2, 1, 4, 1)
-    ]
 
 
 class OlympicSimulator:
@@ -322,22 +233,39 @@ class OlympicAnalyzer:
     
     def _load_countries(self) -> List[OlympicCountry]:
         """Load countries from data."""
-        countries = []
-        for country_data in OlympicData.COUNTRIES:
-            country = OlympicCountry(**{k: v for k, v in asdict(country_data).items() 
-                                      if k not in ['olympic_history', 'athletes']})
-            country.olympic_history = country_data.olympic_history
-            country.athletes = [a for a in OlympicData.ATHLETES if a.country == country.name]
-            countries.append(country)
-        return countries
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'countries.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [OlympicCountry(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            OlympicCountry("United States", "USA", 331000000, 69287.54, {"Swimming": 246, "Athletics": 342}),
+            OlympicCountry("China", "CHN", 1439000000, 12556.33, {"Swimming": 67, "Athletics": 22}),
+        ]
     
     def _load_events(self) -> List[OlympicEvent]:
         """Load events from data."""
-        return OlympicData.EVENTS.copy()
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'events.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [OlympicEvent(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            OlympicEvent("100m Freestyle", "Swimming", "Men", "Individual", "Time", "Aquatic Center", "2024-07-27"),
+            OlympicEvent("100m Sprint", "Athletics", "Men", "Individual", "Time", "Olympic Stadium", "2024-07-30"),
+        ]
     
     def _load_athletes(self) -> List[OlympicAthlete]:
         """Load athletes from data."""
-        return OlympicData.ATHLETES.copy()
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'athletes.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [OlympicAthlete(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            OlympicAthlete("Caeleb Dressel", "USA", "Swimming", "100m Freestyle", 27, "Men", 188, 86, 9.0, 9.5, 8.5, 9.8, 9.0, 8.5, 47.02, 47.15, 1, 2, 7, 5),
+            OlympicAthlete("Kyle Chalmers", "AUS", "Swimming", "100m Freestyle", 25, "Men", 194, 88, 8.5, 9.3, 8.8, 9.2, 8.8, 8.0, 47.08, 47.25, 2, 2, 5, 2),
+        ]
     
     def get_country_by_name(self, name: str) -> Optional[OlympicCountry]:
         """Get country by name."""

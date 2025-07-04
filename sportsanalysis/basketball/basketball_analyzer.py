@@ -1,11 +1,11 @@
 import random
-import json
 from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
-import pandas as pd # For creating Series for plotting
-import plotext as plt # For terminal plotting
+import os
+import pandas as pd
+from .plotting_utils import plot_generic_top_n
 
 
 @dataclass
@@ -58,67 +58,6 @@ class GameResult:
     away_players: Dict[str, Dict[str, Any]]
     date: str
     overtime: bool = False
-
-
-class BasketballData:
-    """Contains basketball data and configuration."""
-    
-    # Sample NBA teams data
-    TEAMS_DATA = [
-        {
-            'name': 'Los Angeles Lakers', 'conference': 'Western', 'division': 'Pacific',
-            'wins': 45, 'losses': 37, 'ppg': 113.2, 'opp_ppg': 111.8, 'pace': 100.2,
-            'off_rtg': 113.8, 'def_rtg': 111.4
-        },
-        {
-            'name': 'Boston Celtics', 'conference': 'Eastern', 'division': 'Atlantic',
-            'wins': 57, 'losses': 25, 'ppg': 118.6, 'opp_ppg': 109.2, 'pace': 98.8,
-            'off_rtg': 118.9, 'def_rtg': 109.5
-        },
-        {
-            'name': 'Golden State Warriors', 'conference': 'Western', 'division': 'Pacific',
-            'wins': 44, 'losses': 38, 'ppg': 116.6, 'opp_ppg': 115.1, 'pace': 102.1,
-            'off_rtg': 114.2, 'def_rtg': 112.8
-        },
-        {
-            'name': 'Miami Heat', 'conference': 'Eastern', 'division': 'Southeast',
-            'wins': 44, 'losses': 38, 'ppg': 109.5, 'opp_ppg': 108.4, 'pace': 95.2,
-            'off_rtg': 112.1, 'def_rtg': 111.0
-        },
-        {
-            'name': 'Dallas Mavericks', 'conference': 'Western', 'division': 'Southwest',
-            'wins': 50, 'losses': 32, 'ppg': 117.9, 'opp_ppg': 115.6, 'pace': 97.8,
-            'off_rtg': 118.2, 'def_rtg': 115.9
-        }
-    ]
-    
-    # Sample player data
-    PLAYERS_DATA = [
-        # Lakers players
-        Player('LeBron James', 'Los Angeles Lakers', 'SF', 25.7, 7.3, 8.1, 1.1, 0.6, 0.504, 0.321, 0.748, 55, 35.5),
-        Player('Anthony Davis', 'Los Angeles Lakers', 'PF', 24.7, 12.3, 3.7, 1.2, 2.4, 0.556, 0.267, 0.793, 56, 34.0),
-        Player('Austin Reaves', 'Los Angeles Lakers', 'SG', 15.9, 4.3, 5.5, 0.8, 0.3, 0.486, 0.362, 0.864, 82, 32.1),
-        
-        # Celtics players
-        Player('Jayson Tatum', 'Boston Celtics', 'SF', 30.1, 8.8, 4.6, 1.0, 0.7, 0.471, 0.375, 0.831, 74, 35.7),
-        Player('Jaylen Brown', 'Boston Celtics', 'SG', 23.5, 5.5, 3.6, 1.1, 0.3, 0.494, 0.355, 0.705, 70, 33.4),
-        Player('Derrick White', 'Boston Celtics', 'PG', 15.2, 4.2, 5.2, 1.0, 1.2, 0.461, 0.386, 0.904, 82, 32.6),
-        
-        # Warriors players
-        Player('Stephen Curry', 'Golden State Warriors', 'PG', 25.5, 4.2, 6.3, 0.7, 0.4, 0.450, 0.403, 0.923, 74, 32.7),
-        Player('Klay Thompson', 'Golden State Warriors', 'SG', 17.9, 3.3, 2.3, 0.7, 0.4, 0.430, 0.387, 0.872, 77, 29.7),
-        Player('Draymond Green', 'Golden State Warriors', 'PF', 8.5, 7.2, 6.8, 0.8, 0.9, 0.487, 0.339, 0.833, 55, 27.0),
-        
-        # Heat players
-        Player('Jimmy Butler', 'Miami Heat', 'SF', 20.8, 5.3, 5.0, 1.3, 0.3, 0.497, 0.241, 0.856, 60, 33.5),
-        Player('Bam Adebayo', 'Miami Heat', 'C', 19.3, 10.4, 3.9, 1.0, 0.9, 0.541, 0.000, 0.806, 75, 34.6),
-        Player('Tyler Herro', 'Miami Heat', 'SG', 20.1, 5.4, 4.2, 0.8, 0.2, 0.439, 0.378, 0.868, 67, 33.9),
-        
-        # Mavericks players
-        Player('Luka Doncic', 'Dallas Mavericks', 'PG', 33.9, 9.2, 9.8, 1.4, 0.5, 0.484, 0.382, 0.742, 70, 37.5),
-        Player('Kyrie Irving', 'Dallas Mavericks', 'PG', 25.6, 5.0, 5.2, 1.1, 0.3, 0.494, 0.412, 0.905, 58, 35.0),
-        Player('P.J. Washington', 'Dallas Mavericks', 'PF', 12.9, 6.5, 1.9, 0.8, 0.8, 0.456, 0.321, 0.711, 73, 28.3)
-    ]
 
 
 class BasketballSimulator:
@@ -223,21 +162,36 @@ class BasketballAnalyzer:
     """Analyzes basketball statistics and provides insights."""
     
     def __init__(self):
-        self.teams = self._load_teams()
         self.players = self._load_players()
-    
-    def _load_teams(self) -> List[Team]:
-        """Load teams from data."""
-        teams = []
-        for team_data in BasketballData.TEAMS_DATA:
-            team = Team(**team_data)
-            team.win_pct = team.wins / (team.wins + team.losses)
-            teams.append(team)
-        return teams
+        self.teams = self._load_teams()
     
     def _load_players(self) -> List[Player]:
         """Load players from data."""
-        return BasketballData.PLAYERS_DATA.copy()
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'players', 'current_season.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [Player(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            Player('LeBron James', 'Los Angeles Lakers', 'SF', 25.7, 7.3, 8.1, 1.1, 0.6, 0.504, 0.321, 0.748, 55, 35.5),
+            Player('Anthony Davis', 'Los Angeles Lakers', 'PF', 24.7, 12.3, 3.7, 1.2, 2.4, 0.556, 0.267, 0.793, 56, 34.0),
+            Player('Austin Reaves', 'Los Angeles Lakers', 'SG', 15.9, 4.3, 5.5, 0.8, 0.3, 0.486, 0.362, 0.864, 82, 32.1),
+            Player('Jayson Tatum', 'Boston Celtics', 'SF', 30.1, 8.8, 4.6, 1.0, 0.7, 0.471, 0.375, 0.831, 74, 35.7),
+            Player('Jaylen Brown', 'Boston Celtics', 'SG', 23.5, 5.5, 3.6, 1.1, 0.3, 0.494, 0.355, 0.705, 70, 33.4),
+            Player('Derrick White', 'Boston Celtics', 'PG', 15.2, 4.2, 5.2, 1.0, 1.2, 0.461, 0.386, 0.904, 82, 32.6),
+        ]
+    
+    def _load_teams(self) -> List[Team]:
+        """Load teams from data."""
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'teams', 'team_stats.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [Team(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            Team('Los Angeles Lakers', 'Western', 'Pacific', 45, 37, 0.549, 113.2, 111.8, 100.2, 113.8, 111.4),
+            Team('Boston Celtics', 'Eastern', 'Atlantic', 57, 25, 0.695, 118.6, 109.2, 98.8, 118.9, 109.5),
+        ]
     
     def get_team_by_name(self, name: str) -> Optional[Team]:
         """Get team by name."""
@@ -421,19 +375,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10, sort_ascending=False) -> None:
-    """Displays a generic bar chart for a pandas Series in the terminal."""
-    # Sort before taking top_n if specified (e.g. for wins, higher is better)
-    sorted_series = data_series.sort_values(ascending=sort_ascending)
-    top_data = sorted_series.head(top_n)
-    items = top_data.index.tolist()
-    values = top_data.values.tolist()
-
-    plt.clf()
-    plt.bar(items, values)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.show()

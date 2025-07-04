@@ -1,11 +1,11 @@
 import random
-import json
 from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
-import pandas as pd # For creating Series for plotting
-import plotext as plt # For terminal plotting
+import os
+import pandas as pd
+from .plotting_utils import plot_generic_top_n
 
 
 @dataclass
@@ -308,16 +308,27 @@ class CricketAnalyzer:
     
     def _load_teams(self) -> List[CricketTeam]:
         """Load teams from data."""
-        teams = []
-        for team_data in CricketData.TEAMS_DATA:
-            team = CricketTeam(**{k: v for k, v in asdict(team_data).items() if k != 'players'})
-            team.players = [p for p in CricketData.PLAYERS_DATA if p.team == team.name]
-            teams.append(team)
-        return teams
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'teams.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [CricketTeam(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            CricketTeam("India", "India", "Rohit Sharma", "Rahul Dravid", "Wankhede Stadium"),
+            CricketTeam("Australia", "Australia", "Pat Cummins", "Andrew McDonald", "MCG"),
+        ]
     
     def _load_players(self) -> List[CricketPlayer]:
         """Load players from data."""
-        return CricketData.PLAYERS_DATA.copy()
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'players.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            return [CricketPlayer(**row) for _, row in df.iterrows()]
+        # fallback to hardcoded data
+        return [
+            CricketPlayer("Virat Kohli", "India", "Batsman", "Right-handed", "Right-arm medium", 254, 245, 12169, 183, 49.67, 93.17, 50, 46, 0, 0, "0/0", 0.0, 0.0, 0.0, 0, 0, 9.5, 3.0, 8.0, 9.0),
+            CricketPlayer("Rohit Sharma", "India", "Batsman", "Right-handed", "Right-arm off-spin", 243, 237, 10109, 264, 42.67, 89.17, 30, 29, 0, 0, "0/0", 0.0, 0.0, 0.0, 0, 0, 9.0, 4.0, 7.0, 9.0),
+        ]
     
     def get_team_by_name(self, name: str) -> Optional[CricketTeam]:
         """Get team by name."""
