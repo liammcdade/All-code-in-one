@@ -2,6 +2,8 @@ import importlib
 import math
 import random
 from collections import defaultdict
+import pandas as pd # For creating Series for plotting
+import plotext as plt # For terminal plotting
 
 # --- FIFA Rankings (used for all confederations) ---
 FIFA_RANKINGS = {
@@ -348,6 +350,14 @@ print("|----------------------|---------|---------|--------|--------|-----------
 for team in sorted(qualified_teams, key=lambda t: -FIFA_RANKINGS.get(t, 0)):
     print(f"| {team:<20} | {stage_counts[team]['R32']:>7.1f} | {stage_counts[team]['R16']:>7.1f} | {stage_counts[team]['QF']:>6.1f} | {stage_counts[team]['SF']:>6.1f} | {stage_counts[team]['Final']:>9.1f} | {stage_counts[team]['Winner']:>10.1f} |")
 
+# Plot Winner Percentages
+winner_percentages = {team: counts['Winner'] for team, counts in stage_counts.items() if counts['Winner'] > 0}
+if winner_percentages:
+    winner_series = pd.Series(winner_percentages).sort_values(ascending=False)
+    plot_generic_top_n(winner_series, "Simulated World Cup Winner Probabilities", "Team", "Win Percentage (%)", top_n=20, sort_ascending=False)
+else:
+    print("\nNo teams won in any simulation, so no winner plot generated.")
+
 # --- Simulate and print qualifying for each confederation ---
 print("\n--- Confederation Qualifying Results ---")
 confed_results = {}
@@ -362,3 +372,22 @@ for name, func in [
     direct, playoff = func()
     confed_results[name] = (direct, playoff)
     print(f"{name}:\n  Direct: {sorted(direct)}\n  Playoff: {sorted(playoff)}\n")
+
+
+def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10, sort_ascending=False) -> None:
+    """Displays a generic bar chart for a pandas Series in the terminal."""
+    # Sort before taking top_n if specified
+    sorted_series = data_series.sort_values(ascending=sort_ascending)
+    # Ensure top_n doesn't exceed the number of items in the series
+    actual_top_n = min(top_n, len(sorted_series))
+    top_data = sorted_series.head(actual_top_n)
+
+    items = top_data.index.tolist()
+    values = top_data.values.tolist() # Assuming values are already percentages or direct counts
+
+    plt.clf()
+    plt.bar(items, values)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()

@@ -4,6 +4,8 @@ from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import statistics
+import pandas as pd # For creating Series for plotting
+import plotext as plt # For terminal plotting
 
 
 @dataclass
@@ -441,9 +443,47 @@ def main():
     print(f"Surface Preferences: {ranking_analysis['analysis']['surface_preferences']}")
     print(f"Youngest: {ranking_analysis['analysis']['youngest_player']['name']} ({ranking_analysis['analysis']['youngest_player']['age']})")
     print(f"Oldest: {ranking_analysis['analysis']['oldest_player']['name']} ({ranking_analysis['analysis']['oldest_player']['age']})")
+    print()
+
+    # Plot Top 10 ATP Players by Overall Rating
+    print("5. Top 10 ATP Players by Overall Rating Plot:")
+    top_10_atp_players_data = ranking_analysis['top_10'] # This is for ATP by default from previous call
     
+    player_ratings = {}
+    for player_dict in top_10_atp_players_data:
+        # Need to call analyze_player to get the 'overall_rating'
+        # This might be slightly inefficient if analyze_player does a lot, but necessary for the rating
+        player_details = analyzer.analyze_player(player_dict['name'], "ATP")
+        if "analysis" in player_details and "overall_rating" in player_details["analysis"]:
+            player_ratings[player_dict['name']] = player_details["analysis"]["overall_rating"]
+        else:
+            # Fallback or skip if rating not found
+            player_ratings[player_dict['name']] = 0
+
+
+    if player_ratings:
+        ratings_series = pd.Series(player_ratings).sort_values(ascending=False)
+        plot_generic_top_n(ratings_series, "Top ATP Players by Overall Rating", "Player", "Overall Rating", top_n=10, sort_ascending=False)
+    else:
+        print("Could not retrieve ratings for plotting.")
+
     print("\n=== Analysis Complete ===")
 
 
 if __name__ == "__main__":
-    main() 
+    main()
+
+
+def plot_generic_top_n(data_series: pd.Series, title: str, xlabel: str, ylabel: str, top_n: int = 10, sort_ascending=False) -> None:
+    """Displays a generic bar chart for a pandas Series in the terminal."""
+    sorted_series = data_series.sort_values(ascending=sort_ascending)
+    top_data = sorted_series.head(top_n)
+    items = top_data.index.tolist()
+    values = top_data.values.tolist()
+
+    plt.clf()
+    plt.bar(items, values)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.show()

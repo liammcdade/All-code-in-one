@@ -22,10 +22,14 @@ from DataNinja.core.cleaner import DataCleaner
 from DataNinja.plugins.geo import GeoProcessor
 from DataNinja.plugins.ml import MLModel
 from DataNinja.plugins.sql import SQLProcessor
+from DataNinja.plugins.calculator import CalculatorProcessor # Import Calculator
 
 app = typer.Typer(
     help="DataNinja: Unified CLI for data manipulation, cleaning, analysis, and visualization."
 )
+calc_app = typer.Typer(help="Scientific and unit conversion calculator.")
+app.add_typer(calc_app, name="calc")
+
 console = Console()
 
 # Session management: store DataFrame in a temp file between commands
@@ -944,6 +948,70 @@ def geo(
         console.print("[red]Unknown geo action. Use 'geocode' or 'distance'.")
         raise typer.Exit()
 
+# --- Calculator Commands ---
+calculator_processor = CalculatorProcessor()
+
+@calc_app.command("sin")
+def calc_sin(value: float = typer.Argument(..., help="Input value (in radians)")):
+    """Calculates the sine of a value."""
+    try:
+        result = calculator_processor.sin(value)
+        console.print(f"sin({value}) = {result}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}")
+
+@calc_app.command("cos")
+def calc_cos(value: float = typer.Argument(..., help="Input value (in radians)")):
+    """Calculates the cosine of a value."""
+    try:
+        result = calculator_processor.cos(value)
+        console.print(f"cos({value}) = {result}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}")
+
+@calc_app.command("tan")
+def calc_tan(value: float = typer.Argument(..., help="Input value (in radians)")):
+    """Calculates the tangent of a value."""
+    try:
+        result = calculator_processor.tan(value)
+        console.print(f"tan({value}) = {result}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}")
+
+@calc_app.command("log")
+def calc_log(
+    value: float = typer.Argument(..., help="Input value"),
+    base: Optional[float] = typer.Option(None, help="Logarithm base (default: natural log 'e')")
+):
+    """Calculates the logarithm of a value."""
+    try:
+        result = calculator_processor.log(value, base)
+        console.print(f"log({value}, base={base if base else 'e'}) = {result}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}")
+
+@calc_app.command("sqrt")
+def calc_sqrt(value: float = typer.Argument(..., help="Input value")):
+    """Calculates the square root of a value."""
+    try:
+        result = calculator_processor.sqrt(value)
+        console.print(f"sqrt({value}) = {result}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}")
+
+@calc_app.command("convert")
+def calc_convert(
+    value: float = typer.Argument(..., help="Value to convert"),
+    from_unit: str = typer.Argument(..., help="Unit to convert from (e.g., km, kg, C)"),
+    to_unit: str = typer.Argument(..., help="Unit to convert to (e.g., m, lb, F)"),
+    category: str = typer.Argument(..., help="Category of conversion (length, weight, temperature)")
+):
+    """Converts a value between units."""
+    try:
+        result = calculator_processor.convert_unit(value, from_unit, to_unit, category)
+        console.print(f"{value} {from_unit} = {result} {to_unit} (category: {category})")
+    except Exception as e:
+        console.print(f"[red]Error: {e}")
 
 if __name__ == "__main__":
     app()
