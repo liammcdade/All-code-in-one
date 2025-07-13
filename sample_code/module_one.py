@@ -19,11 +19,16 @@ class Greeter:
         print(message)
         return message
 
-# A standalone function
-def utility_function():
-    """A simple utility function."""
-    # Comment inside utility_function
-    print("Utility function called.")
+
+# Utility function for demonstration
+def utility_function(verbose=True):
+    """
+    Utility function for module_one.
+    Returns True if utility is working and prints a message.
+    If verbose is False, does not print.
+    """
+    if verbose:
+        print("Utility function called from module_one!")
     return True
 
 another_var = 100

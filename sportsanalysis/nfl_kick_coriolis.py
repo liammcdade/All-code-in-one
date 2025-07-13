@@ -88,7 +88,7 @@ def print_results(distances: List[float], displacements: List[float],
     print(f"\nAverage Coriolis deflection over {len(distances)}-{max(distances)} yard kicks: {avg_deflection_cm:.4f} cm")
     
     if max_index > 0:
-        print(f"Biggest percentage increase: {max_increase:.2f}% from yard {max_index-1} to {max_index}")
+        print(f"Biggest percentage increase: {avg_increase:.2f}% from yard {max_index-1} to {max_index}")
     print(f"Average percentage increase per yard: {avg_increase:.2f}%")
 
 
