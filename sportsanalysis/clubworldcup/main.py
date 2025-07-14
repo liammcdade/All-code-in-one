@@ -1,31 +1,30 @@
-def fractional_to_probability(fractional_odds):
-    """
-    Converts fractional odds (e.g., '1/33') to implied probability.
-    """
-    num, denom = map(int, fractional_odds.split('/'))
-    return denom / (num + denom)
+import pandas as pd
 
-def normalize_probabilities(probabilities):
-    """
-    Normalizes a list of probabilities so they sum to 1.
-    """
-    total = sum(probabilities)
-    return [p / total for p in probabilities]
+# Load your data files
+chelsea_df = pd.read_csv('sportsanalysis/clubworldcup/chelsea.csv')
+psg_df = pd.read_csv('sportsanalysis/clubworldcup/psg.csv')
 
-# Input: update these odds as needed
-odds = {
-    "Paris Saint-Germain": "1/1000",
-    "Draw": "80/1",
-    "Real Madrid": "200/1"
-}
+# Define the xG estimation function
+# xG = PK * 0.79 + (Sh - PKatt) * 0.10
 
-# Calculate implied probabilities for each outcome
-implied_probs = [fractional_to_probability(odds[outcome]) for outcome in odds]
+def estimate_xg(row):
+    penalty_xg = row['PK'] * 0.79
+    non_penalty_shots = row['Sh'] - row['PKatt']
+    non_penalty_xg = non_penalty_shots * 0.10
+    return penalty_xg + non_penalty_xg
 
-# Normalize probabilities so they sum to 100%
-normalized_probs = normalize_probabilities(implied_probs)
+# Apply the xG estimation to both dataframes
+chelsea_df['xG_est'] = chelsea_df.apply(estimate_xg, axis=1)
+psg_df['xG_est'] = psg_df.apply(estimate_xg, axis=1)
 
-# Display results
-print("Implied probabilities (normalized):")
-for outcome, prob in zip(odds, normalized_probs):
-    print(f"{outcome:20}: {prob*100:.3f}%")
+# Show selected columns including the new xG estimate
+
+print("Chelsea xG Estimation:")
+print(chelsea_df[['Age', 'Min', 'Gls', 'Ast', 'PK', 'PKatt', 'Sh', 'SoT', 'xG_est']])
+chelsea_total_xg = chelsea_df['xG_est'].sum()
+print(f"Total Chelsea xG: {chelsea_total_xg:.2f}")
+
+print("\nPSG xG Estimation:")
+print(psg_df[['Age', 'Min', 'Gls', 'Ast', 'PK', 'PKatt', 'Sh', 'SoT', 'xG_est']])
+psg_total_xg = psg_df['xG_est'].sum()
+print(f"Total PSG xG: {psg_total_xg:.2f}")

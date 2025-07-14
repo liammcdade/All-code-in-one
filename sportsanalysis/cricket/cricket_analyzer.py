@@ -5,7 +5,14 @@ from datetime import datetime
 import statistics
 import os
 import pandas as pd
-from .plotting_utils import plot_generic_top_n
+try:
+    from .plotting_utils import plot_generic_top_n
+except ImportError:
+    # Fallback for direct execution
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent))
+    from plotting_utils import plot_generic_top_n
 
 
 @dataclass

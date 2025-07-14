@@ -8,16 +8,10 @@ def first_year_without_leap(current_year: int, drift_threshold_days: float) -> i
     return first_no_leap_year
 
 
-year_to_skip_leap = first_year_without_leap(current_year, drift_threshold)
-
-year_to_skip_leap = first_year_without_leap(current_year, drift_threshold)
-
+# Define variables before using them
 current_year = 2025
 drift_threshold = 1  # 1 day drift
 
-
-current_year = 2025
-drift_threshold = 1  # 1 day drift
 year_to_skip_leap = first_year_without_leap(current_year, drift_threshold)
 print(f"Leap years might start being skipped from year {year_to_skip_leap} onward.")
 

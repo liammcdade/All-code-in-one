@@ -1,76 +1,124 @@
 #!/usr/bin/env python3
 """
-Automated Launcher Tester - Tests all launcher options automatically
+Comprehensive Code Tester - Tests every Python file in the project
 
-This script automatically tests all options in the launcher by simulating
-user input and checking for errors or missing files.
+This script automatically discovers and tests all Python files in the project,
+checking for syntax errors, import issues, missing dependencies, and more.
 """
 
+import ast
 import importlib
+import importlib.util
 import os
 import sys
 import subprocess
+import traceback
 from pathlib import Path
 import time
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Set
+import json
 
+        # ...existing code...
 class LauncherTester:
     def __init__(self):
         self.project_root = Path(__file__).parent
         self.test_results = []
         self.errors = []
-        
-        # Define all tools to test
-        self.tools_to_test = {
-            "DataNinja": {
-                "Data Analyzer": "DataNinja/core/analyzer.py",
-                "Data Cleaner": "DataNinja/core/cleaner.py",
-            },
-            "Sports Analysis": {
-                "Tennis": "sportsanalysis/tennis/tennis_analyzer.py",
-                "Premier League": "sportsanalysis/premier-league/25-26-season.py",
-                "World Cup 2026": "sportsanalysis/worldcup26/main.py",
-                "Women's Euros": "sportsanalysis/womens euros/main.py",
-                "F1": "sportsanalysis/F1/Main.py",
-                "NFL": "sportsanalysis/NFL/Main.py",
-                "Playoffs": "sportsanalysis/playoffs/run-all.py",
-            },
-            "System Tools": {
-                "All PC Tools": "streamyutilities/pc tools/pc_tools_combined.py",
-                "Directory Analyzer": "streamyutilities/pc tools/analyze_directory_sizes.py",
-                "File Renamer": "streamyutilities/pc tools/batch_rename_files.py",
-                "Connectivity Check": "streamyutilities/pc tools/check_connectivity.py",
-                "Cleanup Tool": "streamyutilities/pc tools/cleanup_temp_files.py",
-                "Duplicate Finder": "streamyutilities/pc tools/find_duplicate_files.py",
-                "Password Generator": "streamyutilities/pc tools/generate_password.py",
-                "Image Resizer": "streamyutilities/pc tools/resize_images.py",
-                "File Search": "streamyutilities/pc tools/search_in_files.py",
-                "System Info": "streamyutilities/pc tools/system_info.py",
-            },
-            "Scripts": {
-                "Check Dependencies": "scripts/checkdeps.py",
-                "Generate Docs": "scripts/gendocs.py",
-                "Plugin Loader": "scripts/plugin_loader.py",
-            },
-            "Science & Space": {
-                "Exoplanet Analysis": "space/exoplanet/exoplanet-fill-in.py",
-            },
-            "Extra Tools": {
-                "Emissions Analysis": "extra/analyze_emissions.py",
-                "Cipher Solver": "extra/cphersolve.py",
-                "Dev CLI": "extra/dev_cli.py",
-                "File Monitor": "extra/monitor_all_files.py",
-            },
-            "Development": {
-                "Sample Module 1": "sample_code/module_one.py",
-                "Sample Module 2": "sample_code/module_two.py",
-            }
-        }
+        self.all_python_files = []
 
-    def print_header(self):
-        """Print test header."""
-        print("=" * 80)
-        print("🧪 AUTOMATED LAUNCHER TESTER")
+    def discover_python_files(self):
+        """Discover all Python files in the project recursively."""
+        python_files = []
+        for root, dirs, files in os.walk(self.project_root):
+            # Skip hidden and cache dirs
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d != '__pycache__']
+            for f in files:
+                if f.endswith('.py') and not f.startswith('.'):
+                    python_files.append(os.path.join(root, f))
+        self.all_python_files = sorted(python_files)
+        return self.all_python_files
+
+    def test_all_files(self):
+        """Test all discovered Python files."""
+        print("\n🔍 TESTING ALL PYTHON FILES IN CODEBASE...")
+        print("-" * 80)
+        total_files = 0
+        passed_files = 0
+        failed_files = 0
+        self.discover_python_files()
+        for file_path in self.all_python_files:
+            total_files += 1
+            rel_path = os.path.relpath(file_path, self.project_root)
+            print(f"\n🔧 Testing: {rel_path}")
+            # Test 1: File existence
+            exists = os.path.exists(file_path)
+            if not exists:
+                print(f"   ❌ File not found!")
+                failed_files += 1
+                self.errors.append(f"File not found: {rel_path}")
+                continue
+            print(f"   ✅ File exists")
+            # Test 2: Syntax check
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    source = f.read()
+                compile(source, file_path, 'exec')
+                print(f"   ✅ Syntax OK")
+                syntax_ok = True
+            except SyntaxError as e:
+                print(f"   ❌ Syntax error: {e}")
+                failed_files += 1
+                self.errors.append(f"Syntax error in {rel_path}: {e}")
+                syntax_ok = False
+                continue
+            except Exception as e:
+                print(f"   ❌ Error: {e}")
+                failed_files += 1
+                self.errors.append(f"Error in {rel_path}: {e}")
+                syntax_ok = False
+                continue
+            # Test 3: Import test (skip for __main__ scripts)
+            if not rel_path.endswith('main.py'):
+                try:
+                    spec = importlib.util.spec_from_file_location("test_module", file_path)
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    print(f"   ✅ Import OK")
+                except ImportError as e:
+                    print(f"   ⚠️  Import error: {e}")
+                    self.errors.append(f"Import error in {rel_path}: {e}")
+                except Exception as e:
+                    print(f"   ⚠️  Import error: {e}")
+                    self.errors.append(f"Import error in {rel_path}: {e}")
+            # Test 4: Execution test (for main scripts)
+            if rel_path.endswith('main.py'):
+                try:
+                    result = subprocess.run(
+                        [sys.executable, file_path],
+                        capture_output=True,
+                        text=True,
+                        timeout=10
+                    )
+                    if result.returncode == 0:
+                        print(f"   ✅ Execution OK")
+                    else:
+                        print(f"   ⚠️  Execution failed: {result.stderr}")
+                        self.errors.append(f"Execution failed in {rel_path}: {result.stderr}")
+                except subprocess.TimeoutExpired:
+                    print(f"   ⚠️  Execution timeout")
+                    self.errors.append(f"Execution timeout in {rel_path}")
+                except Exception as e:
+                    print(f"   ⚠️  Execution error: {e}")
+                    self.errors.append(f"Execution error in {rel_path}: {e}")
+            passed_files += 1 if syntax_ok else 0
+            self.test_results.append({
+                'file': rel_path,
+                'exists': exists,
+                'syntax_ok': syntax_ok,
+                'status': 'PASS' if syntax_ok else 'FAIL'
+            })
+        return total_files, passed_files, failed_files
+        # ...existing code...
         print("=" * 80)
 
     def check_file_exists(self, file_path: str) -> bool:
@@ -137,70 +185,7 @@ class LauncherTester:
         except Exception as e:
             return False, f"Execution error: {e}"
 
-    def test_all_files(self):
-        """Test all files in the tools dictionary."""
-        print("\n🔍 TESTING ALL FILES...")
-        print("-" * 80)
-        
-        total_files = 0
-        passed_files = 0
-        failed_files = 0
-        
-        for category, tools in self.tools_to_test.items():
-            print(f"\n📁 Testing {category}:")
-            print("-" * 40)
-            
-            for tool_name, file_path in tools.items():
-                total_files += 1
-                print(f"\n🔧 Testing: {tool_name}")
-                print(f"   File: {file_path}")
-                
-                # Test 1: File existence
-                exists = self.check_file_exists(file_path)
-                if not exists:
-                    print(f"   ❌ File not found!")
-                    failed_files += 1
-                    self.errors.append(f"File not found: {file_path}")
-                    continue
-                
-                print(f"   ✅ File exists")
-                
-                # Test 2: Syntax check
-                syntax_ok, syntax_msg = self.test_file_syntax(file_path)
-                if syntax_ok:
-                    print(f"   ✅ Syntax OK")
-                else:
-                    print(f"   ❌ Syntax error: {syntax_msg}")
-                    failed_files += 1
-                    self.errors.append(f"Syntax error in {file_path}: {syntax_msg}")
-                    continue
-                
-                # Test 3: Import test (skip for main scripts)
-                if not file_path.endswith('main.py') and not file_path.endswith('.py'):
-                    import_ok, import_msg = self.test_file_imports(file_path)
-                    if import_ok:
-                        print(f"   ✅ Import OK")
-                    else:
-                        print(f"   ⚠️  Import warning: {import_msg}")
-                
-                # Test 4: Execution test (for main scripts)
-                if file_path.endswith('main.py') or 'main.py' in file_path:
-                    exec_ok, exec_msg = self.test_file_execution(file_path)
-                    if exec_ok:
-                        print(f"   ✅ Execution OK")
-                    else:
-                        print(f"   ⚠️  Execution warning: {exec_msg}")
-                
-                passed_files += 1
-                self.test_results.append({
-                    'tool': tool_name,
-                    'file': file_path,
-                    'exists': True,
-                    'syntax_ok': syntax_ok,
-                    'status': 'PASS' if syntax_ok else 'FAIL'
-                })
-        
-        return total_files, passed_files, failed_files
+    # ...existing code...
 
     def test_launcher_functionality(self):
         """Test the launcher functionality."""
@@ -374,11 +359,26 @@ class LauncherTester:
 
 def main():
     """Main test runner."""
-    import importlib.util  # Import here for the import test
-    
+    import importlib.util
     tester = LauncherTester()
-    tester.run_full_test()
-
+    print("=" * 80)
+    print("🧪 COMPREHENSIVE CODEBASE TESTER")
+    print("=" * 80)
+    total_files, passed_files, failed_files = tester.test_all_files()
+    print("\n" + "=" * 80)
+    print("📊 TEST REPORT")
+    print("=" * 80)
+    print(f"\n📈 SUMMARY:")
+    print(f"   Total files tested: {total_files}")
+    print(f"   Passed: {passed_files}")
+    print(f"   Failed: {failed_files}")
+    print(f"   Success rate: {(passed_files/total_files)*100:.1f}%")
+    if tester.errors:
+        print(f"\n❌ ERRORS FOUND:")
+        for error in tester.errors:
+            print(f"   • {error}")
+    else:
+        print("\n✅ No errors found. All files passed!")
 
 if __name__ == "__main__":
-    main() 
+    main()

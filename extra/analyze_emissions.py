@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load data
-df = pd.read_csv("historical_emissions.csv")  # replace with actual file path
+df = pd.read_csv("extra/historical_emissions.csv")  # Updated path
 
 # Set 'country' as index
 df.set_index('Country', inplace=True)

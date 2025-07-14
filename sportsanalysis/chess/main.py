@@ -177,8 +177,8 @@ class ChessRLGUI:
             self.sidebar_frame,
             text=f"Epsilon: {self.epsilon:.2f}",
             font=("Inter", 10),
-            fg="  #b0e0e6",
-            bg="  #34495e",
+            fg="#b0e0e6",
+            bg="#34495e",
         )
         self.epsilon_label.pack(fill=tk.X, pady=5)
 
@@ -235,7 +235,7 @@ class ChessRLGUI:
             text="Set Stockfish Path",
             command=self.prompt_stockfish_path,
             font=("Inter", 10, "bold"),
-            bg="#007b",
+            bg="#007bff",
             fg="white",
             activebackground="#0056b3",
             activeforeground="white",

@@ -1,4 +1,11 @@
-from module_one import Greeter, utility_function
+try:
+    from module_one import Greeter, utility_function
+except ImportError:
+    # Fallback for direct execution
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent))
+    from module_one import Greeter, utility_function
 
 # Using the Greeter class
 my_greeter = Greeter("Alice")

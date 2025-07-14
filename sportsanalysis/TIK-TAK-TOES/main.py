@@ -473,7 +473,7 @@ class ChessGUI:
                 x2 = x1 + self.square_size
                 y2 = y1 + self.square_size
                 color = (
-                    "  #D18B47" if (row + col) % 2 == 0 else "#FFCE9E"
+                    "#D18B47" if (row + col) % 2 == 0 else "#FFCE9E"
                 )  # Light and dark squares
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline=color)
 
@@ -828,7 +828,7 @@ if __name__ == "__main__":
     # you can just use "stockfish" or "stockfish.exe".
     # Otherwise, provide the full path, e.g., r"C:\Users\YourUser\Downloads\stockfish_15\stockfish_15_x64.exe"
     # or "/usr/local/bin/stockfish"
-    STOCKFISH_EXECUTABLE_PATH = "TIK-TAK-TOES\stockfish.exe"
+    STOCKFISH_EXECUTABLE_PATH = r"TIK-TAK-TOES\stockfish.exe"
 
     # Create AI instances with initial ELOs
     white_ai = ChessAI(
