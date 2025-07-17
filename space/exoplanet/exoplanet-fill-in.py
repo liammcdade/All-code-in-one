@@ -1,102 +1,193 @@
-import pandas as pd
-import numpy as np
+import math
+import random
 
-# Constants
-G = 6.67430e-11       # m^3 kg^-1 s^-2
-au = 1.495978707e11   # meters
-M_sun = 1.98847e30    # kg
+# Constants (all in SI units)
+EARTH_GRAVITY = 9.78152969 # m/s^2
+MOON_GRAVITY = 1.62   # m/s^2
+EARTH_ESCAPE_VELOCITY = 11200  # m/s
+MOON_ESCAPE_VELOCITY = 2380   # m/s
+MOON_ORBITAL_VELOCITY = 1680   # m/s (low lunar orbit)
+EARTH_ROTATION_SPEED = 465     # m/s at equator
+G0 = 9.81                     # Standard gravity for specific impulse (m/s^2)
 
-# Load data
-df = pd.read_csv("space/exoplanet/exoplanet.csv")
+# Delta-v requirements for mission phases (approximate, in m/s)
+DELTA_V_EARTH_LAUNCH = 9400   # To low Earth orbit
+DELTA_V_EARTH_ESCAPE = 3200   # To escape Earth's gravity from LEO
+DELTA_V_LUNAR_ORBIT = 1400    # Lunar orbit insertion
+DELTA_V_LUNAR_LANDING = 2000   # Lunar landing
+DELTA_V_LUNAR_TAKEOFF = 2000   # Lunar ascent to orbit
+DELTA_V_EARTH_REENTRY = 1000   # Controlled re-entry burn
 
-# Save original missing count and total cells
-original_na = df.isna().sum().sum()
-total_cells = df.size
+def cape_canaveral_initial_velocity(latitude_deg=28.5):
+    """Calculate initial velocity due to Earth's rotation at Cape Canaveral."""
+    return EARTH_ROTATION_SPEED * math.cos(math.radians(latitude_deg))
 
-def calc_orbital_period(a_au, m_star_sol):
-    if pd.isna(a_au) or pd.isna(m_star_sol):
-        return np.nan
-    a_m = a_au * au
-    m_star_kg = m_star_sol * M_sun
-    period_sec = 2 * np.pi * np.sqrt(a_m**3 / (G * m_star_kg))
-    return period_sec / 86400  # seconds to days
+def rocket_equation_delta_v(mass_initial, mass_final, isp):
+    """Calculate delta-v using the Tsiolkovsky rocket equation."""
+    if mass_final <= 0 or mass_initial <= mass_final:
+        return 0
+    return isp * G0 * math.log(mass_initial / mass_final)
 
-def spectype_to_teff(s):
-    if not isinstance(s, str):
-        return np.nan
-    s = s.strip().upper()
-    if s.startswith("O"): return 35000
-    if s.startswith("B"): return 15000
-    if s.startswith("A"): return 9000
-    if s.startswith("F"): return 7000
-    if s.startswith("G"): return 5700
-    if s.startswith("K"): return 4500
-    if s.startswith("M"): return 3200
-    return np.nan
+def thrust_to_weight_ratio(thrust, mass, gravity):
+    """Calculate thrust-to-weight ratio for a given gravity."""
+    return thrust / (mass * gravity)
 
-def teff_to_spectype(teff):
-    if pd.isna(teff):
-        return np.nan
-    if teff > 30000: return "O"
-    if teff > 10000: return "B"
-    if teff > 7500: return "A"
-    if teff > 6000: return "F"
-    if teff > 5200: return "G"
-    if teff > 3700: return "K"
-    return "M"
+def mission_progress(params):
+    """Calculate mission progress for a staged rocket mission."""
+    isp = params["isp"]  # Specific impulse in seconds
+    stages = params["stages"]  # List of (initial_mass, fuel_mass, thrust, burn_time)
 
-def mass_to_radius(mass_jupiter):
-    if pd.isna(mass_jupiter):
-        return np.nan
-    return 1.0 * (mass_jupiter ** 0.5)
+    current_velocity = cape_canaveral_initial_velocity()
+    total_delta_v_required = (DELTA_V_EARTH_LAUNCH + DELTA_V_EARTH_ESCAPE +
+                             DELTA_V_LUNAR_ORBIT + DELTA_V_LUNAR_LANDING +
+                             DELTA_V_LUNAR_TAKEOFF + DELTA_V_EARTH_REENTRY)
+    total_delta_v = 0
+    current_mass = stages[0]["initial_mass"]  # Start with first stage mass
 
-def radius_to_mass(radius_jupiter):
-    if pd.isna(radius_jupiter):
-        return np.nan
-    return (radius_jupiter ** 2)
+    # Earth launch (to LEO and escape)
+    for i, stage in enumerate(stages[:2]):  # First two stages for Earth launch
+        twr = thrust_to_weight_ratio(stage["thrust"], current_mass, EARTH_GRAVITY)
+        if twr < 1.2:  # Require TWR > 1.2 for liftoff
+            return 0.0
+        mass_final = current_mass - stage["fuel_mass"]
+        if mass_final <= 0:
+            return 0.0
+        delta_v = rocket_equation_delta_v(current_mass, mass_final, isp)
+        total_delta_v += delta_v
+        current_mass = mass_final
+        if i == 0:
+            current_mass -= stage["structural_mass"]  # Jettison first stage
 
-# Fill missing pl_eqt
-mask = df['pl_eqt'].isna() & df['st_teff'].notna() & df['st_rad'].notna() & df['pl_orbsmax'].notna()
-df.loc[mask, 'pl_eqt'] = df.loc[mask].apply(lambda r: r['st_teff'] * np.sqrt(r['st_rad'] / (2 * r['pl_orbsmax'])), axis=1)
+    earth_progress = min(total_delta_v / (DELTA_V_EARTH_LAUNCH + DELTA_V_EARTH_ESCAPE), 1.0)
+    if earth_progress < 1.0:
+        return 0.0
 
-# Fill missing pl_insol
-mask = df['pl_insol'].isna() & df['st_rad'].notna() & df['st_teff'].notna() & df['pl_orbsmax'].notna()
-df.loc[mask, 'pl_insol'] = df.loc[mask].apply(lambda r: (r['st_rad']**2) * (r['st_teff']**4) / (r['pl_orbsmax']**2), axis=1)
+    # Lunar orbit insertion
+    twr = thrust_to_weight_ratio(stages[2]["thrust"], current_mass, MOON_GRAVITY)
+    if twr < 1.0:
+        return 0.0
+    mass_final = current_mass - stages[2]["fuel_mass"]
+    if mass_final <= 0:
+        return 0.0
+    delta_v = rocket_equation_delta_v(current_mass, mass_final, isp)
+    total_delta_v += delta_v
+    lunar_orbit_progress = min(delta_v / DELTA_V_LUNAR_ORBIT, 1.0)
+    current_mass = mass_final
+    if lunar_orbit_progress < 1.0:
+        return 0.0
 
-# Fill missing pl_orbper
-mask = df['pl_orbper'].isna() & df['pl_orbsmax'].notna() & df['st_mass'].notna()
-df.loc[mask, 'pl_orbper'] = df.loc[mask].apply(lambda r: calc_orbital_period(r['pl_orbsmax'], r['st_mass']), axis=1)
+    # Lunar landing
+    twr = thrust_to_weight_ratio(stages[3]["thrust"], current_mass, MOON_GRAVITY)
+    if twr < 1.5:  # Higher TWR for precise landing
+        return 0.0
+    mass_final = current_mass - stages[3]["fuel_mass"]
+    if mass_final <= 0:
+        return 0.0
+    delta_v = rocket_equation_delta_v(current_mass, mass_final, isp)
+    total_delta_v += delta_v
+    lunar_landing_progress = min(delta_v / DELTA_V_LUNAR_LANDING, 1.0)
+    current_mass = mass_final
+    if lunar_landing_progress < 1.0:
+        return 0.0
 
-# Fill missing st_teff
-mask = df['st_teff'].isna() & df['st_spectype'].notna()
-df.loc[mask, 'st_teff'] = df.loc[mask, 'st_spectype'].apply(spectype_to_teff)
+    # Lunar takeoff
+    twr = thrust_to_weight_ratio(stages[4]["thrust"], current_mass, MOON_GRAVITY)
+    if twr < 1.5:
+        return 0.0
+    mass_final = current_mass - stages[4]["fuel_mass"]
+    if mass_final <= 0:
+        return 0.0
+    delta_v = rocket_equation_delta_v(current_mass, mass_final, isp)
+    total_delta_v += delta_v
+    lunar_takeoff_progress = min(delta_v / DELTA_V_LUNAR_TAKEOFF, 1.0)
+    current_mass = mass_final
+    if lunar_takeoff_progress < 1.0:
+        return 0.0
 
-# Fill missing st_spectype
-mask = df['st_spectype'].isna() & df['st_teff'].notna()
-df.loc[mask, 'st_spectype'] = df.loc[mask, 'st_teff'].apply(teff_to_spectype)
+    # Earth re-entry
+    twr = thrust_to_weight_ratio(stages[5]["thrust"], current_mass, EARTH_GRAVITY)
+    if twr < 1.0:
+        return 0.0
+    mass_final = current_mass - stages[5]["fuel_mass"]
+    if mass_final <= 0:
+        return 0.0
+    delta_v = rocket_equation_delta_v(current_mass, mass_final, isp)
+    total_delta_v += delta_v
+    earth_reentry_progress = min(delta_v / DELTA_V_EARTH_REENTRY, 1.0)
+    if earth_reentry_progress < 1.0:
+        return 0.0
 
-# Fill missing pl_rade from pl_bmassj
-mask = df['pl_rade'].isna() & df['pl_bmassj'].notna()
-df.loc[mask, 'pl_rade'] = df.loc[mask, 'pl_bmassj'].apply(mass_to_radius)
+    # Overall mission progress
+    return (earth_progress * lunar_orbit_progress * lunar_landing_progress *
+            lunar_takeoff_progress * earth_reentry_progress)
 
-# Fill missing pl_bmassj from pl_rade
-mask = df['pl_bmassj'].isna() & df['pl_rade'].notna()
-df.loc[mask, 'pl_bmassj'] = df.loc[mask, 'pl_rade'].apply(radius_to_mass)
+def random_variation(value, scale=0.05, min_val=1, max_val=None):
+    """Apply random variation to a parameter within a scale."""
+    factor = 1 + random.uniform(-scale, scale)
+    new_val = value * factor
+    if max_val is not None:
+        new_val = min(new_val, max_val)
+    return max(new_val, min_val)
 
-# Fill missing pl_bmasse from pl_bmassj (Jupiter masses to Earth masses)
-mask = df['pl_bmasse'].isna() & df['pl_bmassj'].notna()
-df.loc[mask, 'pl_bmasse'] = df.loc[mask, 'pl_bmassj'] * 317.8
+# Initialize realistic parameters
+initial_params = {
+    "isp": 350,  # Specific impulse (s), typical for chemical rockets
+    "stages": [
+        # Stage 1: Earth launch (booster)
+        {"initial_mass": 500000, "fuel_mass": 400000, "structural_mass": 50000, "thrust": 7.5e6, "burn_time": 150},
+        # Stage 2: Earth escape
+        {"initial_mass": 120000, "fuel_mass": 90000, "structural_mass": 15000, "thrust": 1.5e6, "burn_time": 300},
+        # Stage 3: Lunar orbit insertion
+        {"initial_mass": 30000, "fuel_mass": 20000, "structural_mass": 5000, "thrust": 4e5, "burn_time": 200},
+        # Stage 4: Lunar landing
+        {"initial_mass": 15000, "fuel_mass": 10000, "structural_mass": 3000, "thrust": 2e5, "burn_time": 150},
+        # Stage 5: Lunar takeoff
+        {"initial_mass": 10000, "fuel_mass": 6000, "structural_mass": 2000, "thrust": 1.5e5, "burn_time": 100},
+        # Stage 6: Earth re-entry
+        {"initial_mass": 5000, "fuel_mass": 2000, "structural_mass": 1000, "thrust": 1e5, "burn_time": 50},
+    ]
+}
 
-# Fill missing pl_bmassj from pl_bmasse (Earth masses to Jupiter masses)
-mask = df['pl_bmassj'].isna() & df['pl_bmasse'].notna()
-df.loc[mask, 'pl_bmassj'] = df.loc[mask, 'pl_bmasse'] / 317.8
+best_params = initial_params.copy()
+best_progress = mission_progress(best_params)
+print(f"Initial progress: {best_progress*100:.2f}%")
 
-# Save output
-df.to_csv("filled_exoplanets_formulas.csv", index=False)
+# Optimization loop
+for i in range(10000):
+    trial_params = {
+        "isp": random_variation(best_params["isp"], scale=0.05, min_val=300, max_val=450),
+        "stages": []
+    }
+    current_mass = 0
+    for stage in best_params["stages"]:
+        trial_stage = {
+            "initial_mass": random_variation(stage["initial_mass"], scale=0.05, min_val=5000),
+            "fuel_mass": random_variation(stage["fuel_mass"], scale=0.05, min_val=1000),
+            "structural_mass": random_variation(stage["structural_mass"], scale=0.05, min_val=500),
+            "thrust": random_variation(stage["thrust"], scale=0.05, min_val=5e4),
+            "burn_time": random_variation(stage["burn_time"], scale=0.05, min_val=10, max_val=600)
+        }
+        # Ensure fuel mass doesn't exceed initial mass
+        trial_stage["fuel_mass"] = min(trial_stage["fuel_mass"], trial_stage["initial_mass"] * 0.9)
+        trial_stage["structural_mass"] = min(trial_stage["structural_mass"], trial_stage["initial_mass"] * 0.2)
+        trial_params["stages"].append(trial_stage)
+        current_mass += trial_stage["initial_mass"] if not trial_params["stages"] else 0
 
-# Calculate and print how many cells were filled (percentage)
-new_na = df.isna().sum().sum()
-filled_cells = original_na - new_na
-percent_filled = (filled_cells / total_cells) * 100
+    progress = mission_progress(trial_params)
 
-print(f"Filled {filled_cells} cells ({percent_filled:.2f}%) of total {total_cells} cells.")
+    if progress > best_progress:
+        best_progress = progress
+        best_params = trial_params
+        print(f"Iteration {i}: Progress: {progress*100:.2f}%, ISP: {best_params['isp']:.2f}, Stages: {[s['initial_mass'] for s in best_params['stages']]}")
+
+    if best_progress >= 0.99:  # Allow near-100% due to numerical precision
+        print("Mission parameters found for near-full success.")
+        break
+
+print("\nBest parameters found:")
+print(f"ISP: {best_params['isp']:.2f} s")
+for i, stage in enumerate(best_params["stages"], 1):
+    print(f"Stage {i}: Initial Mass: {stage['initial_mass']:.0f} kg, Fuel Mass: {stage['fuel_mass']:.0f} kg, "
+          f"Structural Mass: {stage['structural_mass']:.0f} kg, Thrust: {stage['thrust']:.0f} N, "
+          f"Burn Time: {stage['burn_time']:.1f} s")
+print(f"Best mission progress: {best_progress*100:.2f}%")
